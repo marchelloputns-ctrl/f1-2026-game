@@ -482,7 +482,7 @@ body {
       <h1>F1 <span>2026</span> Prognožu spēle</h1>
       <div class="sub"></div>
     </div>
-    <div class="next-race" id="nextRaceBox">Loading calendar…</div>
+    <div class="next-race" id="nextRaceBox">Ieleādē kalendāru…</div>
   </div>
 </header>
 
@@ -535,7 +535,7 @@ body {
         <div><label>Ātrākais aplis</label><select id="fastestLap"></select></div>
       </div>
       <button class="btn" id="submitPredictionBtn">Saglabāt pilnu prognozi</button>
-      <button class="btn secondary" id="savePoleOnlyBtn">Saglabāt tikai Pole Position</button>
+      <button class="btn" id="savePoleOnlyBtn">Saglabāt tikai Pole Position</button>
       <div class="helptext">Pole vari iesniegt atsevišķi. Pēc tam varēsi pabeigt TOP 10 un ātrākā apļa prognozi.</div>
       <div id="predictMsg"></div>
       </div>
@@ -628,7 +628,7 @@ body {
             <div><label>P10</label><select id="ar10"></select></div>
           </div>
           <hr class="div">
-          <h3 style="font-size:14px;color:var(--muted);">ACTUAL BONUSES</h3>
+          <h3 style="font-size:14px;color:var(--muted);">Patiesie BONUSI</h3>
           <div class="grid3">
             <div><label>Pole position</label><select id="apole"></select></div>
             <div><label>Ātrākais aplis</label><select id="afastestLap"></select></div>
@@ -1401,7 +1401,7 @@ function driverLabel(code){
 async function renderResultsTab(){
   const list = document.getElementById('resultsList');
 
-  list.innerHTML = '<div class="empty">Loading…</div>';
+  list.innerHTML = '<div class="empty">Ielādē…</div>';
 
   // Gan pabeigtās, gan atceltās sacīkstes
   const resultKeys = await listKeys('result:');
@@ -1602,9 +1602,9 @@ async function renderResultsTab(){
 /* ---------------- leaderboard ---------------- */
 async function renderLeaderboard(){
   const body = document.getElementById('leaderboardBody');
-  body.innerHTML = '<tr><td colspan="5" class="empty">Loading…</td></tr>';
+  body.innerHTML = '<tr><td colspan="5" class="empty">Ielādē…</td></tr>';
   const keys = await listKeys('score:');
-  if(keys.length===0){ body.innerHTML = '<tr><td colspan="5" class="empty">No scored rounds yet.</td></tr>'; return; }
+  if(keys.length===0){ body.innerHTML = '<tr><td colspan="5" class="empty">Vēl nav neviena novērtēta raunda.</td></tr>'; return; }
   const totals = {}; // name -> {total, rounds, best}
   for(const k of keys){
     const s = await getJSON(k);
@@ -1885,20 +1885,20 @@ async function populateManagePlayerSelect(){
   const sorted = [...names.values()].sort((a,b)=>a.localeCompare(b));
   sel.innerHTML = sorted.length
     ? sorted.map(n=>`<option value="${escapeHTML(n)}">${escapeHTML(n)}</option>`).join('')
-    : '<option value="">No players yet</option>';
+    : '<option value="">Vēl nav spēlētāju</option>';
 }
 
 document.getElementById('deletePlayerBtn').addEventListener('click', async ()=>{
   const msg = document.getElementById('managePlayerMsg');
   const name = document.getElementById('managePlayerSelect').value;
-  if(!name){ msg.innerHTML = '<div class="msg err">Pick a player first.</div>'; return; }
-  if(!confirm(`Delete all predictions and scores for "${name}"? This cannot be undone.`)) return;
+  if(!name){ msg.innerHTML = '<div class="msg err">Vispirms izvēlies spēlētāju.</div>'; return; }
+  if(!confirm(`Dzēst visas prognozes un rezultātus priekš"${name}"? To nav iespējams atsaukt.`)) return;
   const lower = name.toLowerCase();
   const predKeys = (await listKeys('prediction:')).filter(k=>k.endsWith(':'+lower));
   const scoreKeys = (await listKeys('score:')).filter(k=>k.endsWith(':'+lower));
   let deleted = 0;
   for(const k of [...predKeys, ...scoreKeys]){ if(await deleteKey(k)) deleted++; }
-  msg.innerHTML = `<div class="msg ok">Deleted ${name} (${deleted} record(s) removed).</div>`;
+  msg.innerHTML = `<div class="msg ok">Izdzēsts ${name} (${deleted} ieraksts/i noņemts/i).</div>`;
   await populateManagePlayerSelect();
 });
 
@@ -1998,7 +1998,7 @@ async function selectAdminRace(round){
   ['ar1','ar2','ar3','ar4','ar5','ar6','ar7','ar8','ar9','ar10'].forEach((id,i)=>document.getElementById(id).value = existing? existing.race[i]:'' );
   document.getElementById('apole').value = existing ? (existing.pole||'') : '';
   document.getElementById('afastestLap').value = existing ? (existing.fastestLap||'') : '';
-  document.getElementById('adminMsg').innerHTML = existing ? '<div class="msg info">This round already has a saved result — saving again will overwrite and re-score it.</div>' : '';
+  document.getElementById('adminMsg').innerHTML = existing ? '<div class="msg info">Šim raundam jau ir saglabāts rezultāts — atkārtota saglabāšana to pārrakstīs un pārrēķinās punktus.</div>' : '';
 }
 
 document.getElementById('toggleDoublePointsBtn').addEventListener('click', async () => {
@@ -2069,13 +2069,13 @@ document.getElementById('toggleDoublePointsBtn').addEventListener('click', async
 });
 
 async function saveResultFromForm(round, race, pole, fastestLap){
-  if(race.some(v=>!v)) return {ok:false, error:'Fill in every race position.'};
-  if(!pole || !fastestLap) return {ok:false, error:'Pick the actual pole position and fastest lap driver.'};
-  if(new Set(race).size!==race.length) return {ok:false, error:'Race must be 10 different drivers.'};
+  if(race.some(v=>!v)) return {ok:false, error:'Aizpildiet visas sacensību pozīcijas.'};
+  if(!pole || !fastestLap) return {ok:false, error:'Izvēlieties braucēju, kurš izcīnīs "pole position" un uzrādīs ātrāko apli.'};
+  if(new Set(race).size!==race.length) return {ok:false, error:'Sacīkstē jāpiedalās 10 dažādiem braucējiem.'};
   const raceInfo = CALENDAR.find(r=>r.round===round);
   const result = {round, raceName: raceInfo? raceInfo.name : ('Round '+round), race, pole, fastestLap, enteredAt:new Date().toISOString()};
   const ok = await setJSON('result:'+round, result);
-  if(!ok) return {ok:false, error:'Storage write failed.'};
+  if(!ok) return {ok:false, error:'Datu ierakstīšana krātuvē neizdevās.'};
   const scoring = await scoreRound(round, result);
   if (scoring.failed) return {ok:false, error:`Rezultāts saglabāts, bet ${scoring.failed} spēlētājiem punkti netika saglabāti.`};
   return {ok:true};
@@ -2088,7 +2088,7 @@ document.getElementById('saveResultBtn').addEventListener('click', async ()=>{
   const pole = document.getElementById('apole').value;
   const fastestLap = document.getElementById('afastestLap').value;
   const r = await saveResultFromForm(adminSelectedRound, race, pole, fastestLap);
-  msg.innerHTML = r.ok ? '<div class="msg ok">Result saved and predictions scored.</div>' : `<div class="msg err">${r.error}</div>`;
+  msg.innerHTML = r.ok ? '<div class="msg ok">Rezultāti saglabāti, un prognozes novērtētas.</div>' : `<div class="msg err">${r.error}</div>`;
   if(r.ok) await renderAdminRaceStrip();
 });
 document.getElementById('cancelRaceBtn').addEventListener('click', async () => {
