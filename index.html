@@ -280,7 +280,6 @@ body {
   background: var(--red);
   border: 1px solid var(--red);
   color: #ffffff;
-  margin-left:540px;
   }
 
   #cancelRaceBtn:hover {
@@ -359,6 +358,71 @@ body {
   font-weight: 900;
   text-align: right;
 }
+  /* Spēlētāju horizontālā izvēlne pabeigtajiem posmiem */
+  .player-chip {
+    flex: 0 0 auto;
+    min-width: 120px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--asphalt-2);
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .player-chip:hover { border-color: var(--amber); }
+  .player-chip.selected {
+    background: #352a12;
+    border-color: var(--amber);
+  }
+  #toggleDoublePointsBtn {
+  margin-top: 14px;
+  background: #25292e;
+  border: 1px solid #4b5057;
+  color: #fff;
+}
+
+#toggleDoublePointsBtn.active-double {
+  background: #241012;
+  border-color: var(--red);
+  color: #ff6b66;
+}
+
+/* Dubultā posma kartīte slaiderī */
+.chip.double {
+  border-color: var(--line);
+  background: var(--asphalt-2);
+}
+
+.chip.double.selected {
+  border-color: var(--amber);
+  background: #392e13;
+}
+
+.chip.double .race-info b {
+  color: #ffffff;
+}
+ .chip.double:hover {
+  background: #22262b;
+  transform: translateY(-2px);
+  }
+
+/* 2× marķieris */
+.double-marker {
+  display: inline-block;
+  align-self: center;
+  background: var(--amber);
+  color: #161616;
+  border-radius: 3px;
+  padding: 3px 5px;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.2;
+  margin-top: 7px;
+}
+
 .result-flag {
   width: 32px;
   height: 21px;
@@ -367,6 +431,47 @@ body {
   vertical-align: middle;
   margin-right: 8px;
 }
+.admin-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  margin-top: 16px;
+}
+
+.admin-action-buttons .btn {
+  margin-top: 0 !important;
+}
+
+/* Saglabāt rezultātus — kreisajā pusē */
+.admin-action-buttons #saveResultBtn {
+  order: 1;
+}
+
+/* 2× punkti — labajā pusē */
+.admin-action-buttons #toggleDoublePointsBtn {
+  order: 2;
+  margin-left: auto;
+}
+
+/* Atcelt sacīksti — tieši blakus 2× pogai */
+.admin-action-buttons #cancelRaceBtn {
+  order: 3;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* Mazākiem ekrāniem */
+@media (max-width: 750px) {
+  .admin-action-buttons {
+    flex-wrap: wrap;
+  }
+
+  .admin-action-buttons #toggleDoublePointsBtn {
+    margin-left: 0;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -429,10 +534,17 @@ body {
         <div><label>Pole position</label><select id="pole"></select></div>
         <div><label>Ātrākais aplis</label><select id="fastestLap"></select></div>
       </div>
-      <button class="btn" id="submitPredictionBtn">Saglabāt prognozi</button>
+      <button class="btn" id="submitPredictionBtn">Saglabāt pilnu prognozi</button>
+      <button class="btn secondary" id="savePoleOnlyBtn">Saglabāt tikai Pole Position</button>
+      <div class="helptext">Pole vari iesniegt atsevišķi. Pēc tam varēsi pabeigt TOP 10 un ātrākā apļa prognozi.</div>
       <div id="predictMsg"></div>
       </div>
 
+      <div class="card" id="playerPredictionsCard" style="display:none;">
+        <h3>Citu spēlētāju prognozes</h3>
+        <p class="lede">Pēc rezultātu ievadīšanas izvēlies spēlētāju, lai apskatītu viņa prognozi un punktus.</p>
+        <div class="row-strip" id="playerPredictionStrip"></div>
+      </div>
       <div id="predictionScoreBreakdown" style="display:none;"></div>
   </section>
 
@@ -454,9 +566,34 @@ body {
       </table>
     </div>
     <div class="card">
+  <h3>Spēlētāju punktu salīdzinājums</h3>
+
+  <p class="lede">
+    Salīdzini spēlētāju rezultātus katrā sacīkšu posmā.
+  </p>
+
+  <label for="chartMode">Grafika režīms</label>
+
+  <select id="chartMode" style="max-width:260px;margin-bottom:16px;">
+    <option value="race">Punkti katrā posmā</option>
+    <option value="cumulative">Sezonas kopējie punkti</option>
+  </select>
+
+  <div style="overflow-x:auto;">
+    <div style="position:relative;min-width:720px;height:360px;">
+      <canvas id="scoreChart"></canvas>
+    </div>
+  </div>
+
+  <div id="scoreChartMessage"
+       class="helptext"
+       style="margin-top:10px;">
+  </div>
+</div>
+    <div class="card">
       <h3>Kā strādā punktu sistēma?</h3>
       <p class="lede" style="margin-bottom:6px;">Sacīkste (10 labākie): par katru braucēju, kurš faktiski finišē labāko 10 vidū, var saņemt<b> 10 punktus mīnus atšķirība</b> starp pozīciju, kuru viņš faktiski ieņēma (minimālais rezultāts — 0). Precīza pozīcija — 10 punkti; kļūda par vienu vietu — 9 punkti utt. Par pilotu, kurš vispār neiekļaujas labāko desmitniekā, saņem 0 punktus. Maksimālais punktu skaits kārtā — 100. </p>
-      <p class="lede" style="margin-bottom:0;">Bonusi: +5 punkti par pareizi uzminētu "pole position", +3 punkti par pareizi uzminētu ātrāko apli.</p>
+      <p class="lede" style="margin-bottom:0;">Bonusi: +5 punkti par pareizi uzminētu "pole position", +3 punkti par pareizi uzminētu ātrāko apli. 2× posmā tiek dubultoti visi punkti.</p>
     </div>
   </section>
 
@@ -496,10 +633,29 @@ body {
             <div><label>Pole position</label><select id="apole"></select></div>
             <div><label>Ātrākais aplis</label><select id="afastestLap"></select></div>
           </div>
-          <button class="btn" id="saveResultBtn">Saglabāt rezultātus; un novērtēt prognozes</button>
-          <button id="cancelRaceBtn" class="btn secondary">Atcelt sacīksti</button>
-          <div id="adminMsg"></div>
-        </div>
+
+          <div id="doublePointsMsg"></div>
+
+          <div class="admin-action-buttons">
+
+          <button class="btn secondary small"
+          id="toggleDoublePointsBtn"
+          type="button">
+          1× punkti — pārslēgt uz 2×
+          </button>
+
+          <button class="btn" id="saveResultBtn">
+          Saglabāt rezultātus; un novērtēt prognozes
+          </button>
+
+          <button class="btn secondary" id="cancelRaceBtn">
+          Atcelt sacīksti
+          </button>
+
+          </div>
+
+<div id="adminMsg"></div>
+</div>
       </div>
       <div class="card">
         <h3>Importēt rezultātu masīvu no CSV</h3>
@@ -557,6 +713,7 @@ body {
     </div>
   </section>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ---------------- static data ---------------- */
@@ -736,7 +893,10 @@ document.querySelectorAll('nav button').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab==='results') renderResultsTab();
-    if(btn.dataset.tab==='leaderboard') renderLeaderboard();
+    if (btn.dataset.tab === 'leaderboard') {
+  renderLeaderboard();
+  renderScoreChart();
+}
   });
 });
 
@@ -825,8 +985,11 @@ renderNextRaceBanner();
 /* ---------------- race strip (predict tab) ---------------- */
 async function renderRaceStrip(){
   const strip = document.getElementById('raceStrip');
-  strip.innerHTML = '';
 
+  // Saglabā slaidera pašreizējo horizontālo pozīciju
+  const savedScrollLeft = strip.scrollLeft;
+
+  strip.innerHTML = '';
   const doneRounds = new Set(
     (await listKeys('result:')).map(k => k.split(':')[1])
   );
@@ -834,18 +997,23 @@ async function renderRaceStrip(){
   const cancelledRounds = new Set(
     (await listKeys('cancelled:')).map(k => k.split(':')[1])
   );
+  const doubleRounds = new Set(
+    (await listKeys('double:')).map(k => k.split(':')[1])
+  );
 
   CALENDAR.forEach(r => {
     const chip = document.createElement('div');
 
     const isDone = doneRounds.has(String(r.round));
     const isCancelled = cancelledRounds.has(String(r.round));
+    const isDouble = !isCancelled && doubleRounds.has(String(r.round));
 
     chip.className =
-      'chip' +
-      (isDone && !isCancelled ? ' done locked' : '') +
-      (isCancelled ? ' cancelled locked' : '') +
-      (r.round === selectedRaceRound ? ' selected' : '');
+    'chip' +
+    (isDone && !isCancelled ? ' done locked' : '') +
+    (isCancelled ? ' cancelled locked' : '') +
+    (isDouble ? ' double' : '') +
+    (r.round === selectedRaceRound ? ' selected' : '');
 
     chip.innerHTML = `
       <img class="race-flag"
@@ -855,6 +1023,7 @@ async function renderRaceStrip(){
       <span class="race-info">
         <b>S${r.round}</b>
         <span>${r.circuit}</span>
+        ${isDouble ? '<span class="double-marker">2× PUNKTI</span>' : ''}
       </span>
     `;
 
@@ -868,8 +1037,11 @@ async function renderRaceStrip(){
 
     chip.addEventListener('click', () => selectRace(r.round));
 
-    strip.appendChild(chip);
+       strip.appendChild(chip);
   });
+
+  // Atjauno iepriekšējo slaidera pozīciju
+  strip.scrollLeft = savedScrollLeft;
 }
 let countdownInterval = null;
 function startCountdown(raceDateTime){
@@ -895,126 +1067,221 @@ function startCountdown(raceDateTime){
   tick();
   countdownInterval = setInterval(tick, 1000);
 }
-async function selectRace(round){
+// 2× iestatījums glabājas atsevišķi, neietekmējot vecās prognozes.
+async function getRoundMultiplier(round) {
+  return (await getJSON('double:' + round)) === true ? 2 : 1;
+}
+
+function escapeHTML(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[ch]));
+}
+
+async function renderPlayerPredictionStrip(round, result) {
+  const card = document.getElementById('playerPredictionsCard');
+  const strip = document.getElementById('playerPredictionStrip');
+  const keys = await listKeys('prediction:' + round + ':');
+  const players = [];
+
+  for (const key of keys) {
+    const prediction = await getJSON(key);
+    if (prediction && prediction.name) players.push(prediction);
+  }
+
+  // Ja pa šo laiku izvēlēts cits posms, neattēlojam iepriekšējā rezultātus.
+  if (selectedRaceRound !== round) return;
+
+  players.sort((a, b) => a.name.localeCompare(b.name, 'lv'));
+  strip.replaceChildren();
+  const breakdown = document.getElementById('predictionScoreBreakdown');
+  breakdown.style.display = 'none';
+  breakdown.innerHTML = '';
+
+  if (!players.length) {
+    card.style.display = 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+  const multiplier = await getRoundMultiplier(round);
+  if (selectedRaceRound !== round) return;
+
+  const currentName = document.getElementById('userName').value.trim().toLowerCase();
+  let selected = players.find(p => p.name.toLowerCase() === currentName) || players[0];
+
+  function showPlayer(prediction) {
+    if (selectedRaceRound !== round) return;
+    selected = prediction;
+    strip.querySelectorAll('.player-chip').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.player === prediction.name.toLowerCase());
+      btn.setAttribute('aria-pressed', String(btn.dataset.player === prediction.name.toLowerCase()));
+    });
+    renderPredictionBreakdown(prediction, result, multiplier);
+  }
+
+  players.forEach(prediction => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'player-chip';
+    btn.dataset.player = prediction.name.toLowerCase();
+    btn.textContent = prediction.name;
+    btn.addEventListener('click', () => showPlayer(prediction));
+    strip.appendChild(btn);
+  });
+
+  showPlayer(selected);
+}
+
+async function selectRace(round) {
   selectedRaceRound = round;
   await renderRaceStrip();
-  const race = CALENDAR.find(r=>r.round===round);
+  if (selectedRaceRound !== round) return;
+  const race = CALENDAR.find(r => r.round === round);
+  if (!race) return;
+
   const form = document.getElementById('predictForm');
   const statusMsg = document.getElementById('raceStatusMsg');
   const breakdown = document.getElementById('predictionScoreBreakdown');
-
-  // Katru reizi pārslēdzot sacīksti, sākam ar tīru skatu
+  const playersCard = document.getElementById('playerPredictionsCard');
   form.style.display = 'none';
   breakdown.style.display = 'none';
   breakdown.innerHTML = '';
-  const result = await getJSON('result:'+round);
-const cancelled = await getJSON('cancelled:'+round);
+  playersCard.style.display = 'none';
 
-document.getElementById('predictFormTitle').textContent =
-  `Sacīkste nr. ${race.round} — ${race.name}`;
+  const result = await getJSON('result:' + round);
+  const cancelled = await getJSON('cancelled:' + round);
+  if (selectedRaceRound !== round) return;
 
-startCountdown(race.raceDateTime);
+  document.getElementById('predictFormTitle').textContent =
+    `Sacīkste nr. ${race.round} — ${race.name}`;
+  startCountdown(race.raceDateTime);
 
-
-// ==========================================
-// ATCELTA SACĪKSTE
-// ==========================================
-if (cancelled) {
-
-  // Prognožu formu nerāda
-  form.style.display = 'none';
-
-  // Punktu breakdown arī nerāda
-  breakdown.style.display = 'none';
-  breakdown.innerHTML = '';
-
-  // Parāda paziņojumu
-  statusMsg.style.display = 'block';
-  statusMsg.className = 'msg err';
-
-  statusMsg.innerHTML = `
-    <b>Sacīkste atcelta.</b><br>
-    Šis posms netiks vērtēts.
-  `;
-
-  return;
-}
-
-
-// ==========================================
-// PABEIGTA SACĪKSTE
-// ==========================================
-  if(result){
-  const name = document.getElementById('userName').value.trim();
-
-  // Forma vairs nav rediģējama
- 
-  statusMsg.style.display = 'block';
-  statusMsg.className = 'msg info';
-
-  if(!name){
-    statusMsg.textContent =
-      'Sacīkstes rezultāti ir ievadīti. Ievadi savu vārdu, lai redzētu savu prognozi un punktus.';
-
-    document.getElementById('predictionScoreBreakdown').style.display = 'none';
+  if (cancelled) {
+    statusMsg.style.display = 'block';
+    statusMsg.className = 'msg err';
+    statusMsg.textContent = 'Sacīkste atcelta. Šis posms netiks vērtēts.';
     return;
   }
 
-  const prediction = await getJSON(
-    'prediction:' + round + ':' + name.toLowerCase()
-  );
-
-  if(!prediction){
-    statusMsg.textContent =
-      'Šim posmam tev nav saglabātas prognozes.';
-
-    document.getElementById('predictionScoreBreakdown').style.display = 'none';
+  if (result) {
+    statusMsg.style.display = 'block';
+    statusMsg.className = 'msg info';
+    statusMsg.textContent = 'Sacīkste noslēgusies — izvēlies spēlētāju zemāk, lai redzētu viņa prognozi un punktus.';
+    await renderPlayerPredictionStrip(round, result);
     return;
   }
 
-  statusMsg.textContent =
-    'Sacīkste noslēgusies — zemāk redzama tava prognoze un iegūtie punkti.';
-
-  renderPredictionBreakdown(prediction, result);
-
-  return;
-}
-  statusMsg.style.display='none';
-  document.getElementById('predictionScoreBreakdown').style.display='none';
-  form.style.display='block';
+  statusMsg.style.display = 'none';
+  form.style.display = 'block';
   const name = document.getElementById('userName').value.trim();
-  ['r1','r2','r3','r4','r5','r6','r7','r8','r9','r10','pole','fastestLap'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('predictMsg').innerHTML='';
-  if(name){
-    const existing = await getJSON('prediction:'+round+':'+name.toLowerCase());
-    if(existing){
-      ['r1','r2','r3','r4','r5','r6','r7','r8','r9','r10'].forEach((id,i)=>document.getElementById(id).value = existing.race[i]||'');
-      document.getElementById('pole').value = existing.pole||'';
-      document.getElementById('fastestLap').value = existing.fastestLap||'';
-      document.querySelectorAll('#predictForm select').forEach(updateDriverSelectColor);
-      document.getElementById('predictMsg').innerHTML = '<div class="msg info">Loaded your existing prediction — edit and save to update it.</div>';
-    }
+  ['r1','r2','r3','r4','r5','r6','r7','r8','r9','r10','pole','fastestLap'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.querySelectorAll('#predictForm select').forEach(updateDriverSelectColor);
+  document.getElementById('predictMsg').innerHTML = '';
+  if (!name) return;
+
+  const existing = await getJSON('prediction:' + round + ':' + name.toLowerCase());
+  if (selectedRaceRound !== round) return;
+  if (existing) {
+    const savedRace = Array.isArray(existing.race) ? existing.race : [];
+    ['r1','r2','r3','r4','r5','r6','r7','r8','r9','r10'].forEach((id, i) => {
+      document.getElementById(id).value = savedRace[i] || '';
+    });
+    document.getElementById('pole').value = existing.pole || '';
+    document.getElementById('fastestLap').value = existing.fastestLap || '';
+    document.querySelectorAll('#predictForm select').forEach(updateDriverSelectColor);
+    document.getElementById('predictMsg').innerHTML =
+      '<div class="msg info">Iepriekšējā prognoze ielādēta. Vari to papildināt vai labot.</div>';
   }
 }
 
-document.getElementById('submitPredictionBtn').addEventListener('click', async ()=>{
+// Saglabā pilnu TOP 10 + Pole + FL prognozi.
+document.getElementById('submitPredictionBtn').addEventListener('click', async () => {
   const msg = document.getElementById('predictMsg');
   const name = document.getElementById('userName').value.trim();
-  if(!name){ msg.innerHTML='<div class="msg err">Enter your name first.</div>'; return; }
-  if(!selectedRaceRound){ msg.innerHTML='<div class="msg err">Pick a race.</div>'; return; }
-  const race = ['r1','r2','r3','r4','r5','r6','r7','r8','r9','r10'].map(id=>document.getElementById(id).value);
-  const pole = document.getElementById('pole').value;
+  const round = selectedRaceRound;
+  if (!name || !round) {
+    msg.innerHTML = '<div class="msg err">Vispirms ievadi savu vārdu un izvēlies posmu.</div>';
+    return;
+  }
+  if (await getJSON('result:' + round) || await getJSON('cancelled:' + round)) {
+    msg.innerHTML = '<div class="msg err">Šim posmam prognozes ir slēgtas.</div>';
+    return;
+  }
+  const race = ['r1','r2','r3','r4','r5','r6','r7','r8','r9','r10']
+    .map(id => document.getElementById(id).value);
   const fastestLap = document.getElementById('fastestLap').value;
-  if(race.some(v=>!v)){ msg.innerHTML='<div class="msg err">Aizpildi katru sacīkstes rezultāta pozīciju.</div>'; return; }
-  if(!pole || !fastestLap){ msg.innerHTML='<div class="msg err">Izvēlies pole position un fastest lap pilotu.</div>'; return; }
-  if(new Set(race).size !== race.length){ msg.innerHTML='<div class="msg err">Sacīskstes prognozi sastāda 10 atšķirīgi braucēji</div>'; return; }
-  const raceInfo = CALENDAR.find(r=>r.round===selectedRaceRound);
-  const payload = {round:selectedRaceRound, raceName:raceInfo.name, name, race, pole, fastestLap, submittedAt:new Date().toISOString()};
-  const ok = await setJSON('prediction:'+selectedRaceRound+':'+name.toLowerCase(), payload);
-  msg.innerHTML = ok ? '<div class="msg ok">Prognoze saglabāta</div>' : '<div class="msg err">Prognoze nesaglabāta — mēģini vēlreiz</div>';
+  const key = 'prediction:' + round + ':' + name.toLowerCase();
+  const existing = await getJSON(key);
+  const pole = document.getElementById('pole').value || (existing && existing.pole) || '';
+
+  if (race.some(v => !v)) {
+    msg.innerHTML = '<div class="msg err">Aizpildi visas TOP 10 pozīcijas.</div>';
+    return;
+  }
+  if (new Set(race).size !== 10) {
+    msg.innerHTML = '<div class="msg err">TOP 10 jābūt desmit dažādiem braucējiem.</div>';
+    return;
+  }
+  if (!pole || !fastestLap) {
+    msg.innerHTML = '<div class="msg err">Izvēlies Pole Position un ātrākā apļa braucēju.</div>';
+    return;
+  }
+
+  const raceInfo = CALENDAR.find(r => r.round === round);
+  const payload = {
+    ...(existing || {}), round, raceName: raceInfo.name, name, race, pole, fastestLap,
+    submittedAt: new Date().toISOString(),
+    poleSubmittedAt: existing && existing.pole === pole
+      ? existing.poleSubmittedAt || existing.submittedAt
+      : new Date().toISOString()
+  };
+  const ok = await setJSON(key, payload);
+  msg.innerHTML = ok
+    ? '<div class="msg ok">Pilnā prognoze saglabāta.</div>'
+    : '<div class="msg err">Prognozi neizdevās saglabāt.</div>';
 });
 
-document.getElementById('userName').addEventListener('change', ()=>{ if(selectedRaceRound) selectRace(selectedRaceRound); });
+// Tikai Pole Position: saglabājot netiek dzēsta agrāk iesniegtā TOP 10/FL prognoze.
+document.getElementById('savePoleOnlyBtn').addEventListener('click', async () => {
+  const msg = document.getElementById('predictMsg');
+  const name = document.getElementById('userName').value.trim();
+  const round = selectedRaceRound;
+  const pole = document.getElementById('pole').value;
+  if (!name || !round || !pole) {
+    msg.innerHTML = '<div class="msg err">Ievadi vārdu, izvēlies posmu un Pole Position braucēju.</div>';
+    return;
+  }
+  if (await getJSON('result:' + round) || await getJSON('cancelled:' + round)) {
+    msg.innerHTML = '<div class="msg err">Šim posmam prognozes ir slēgtas.</div>';
+    return;
+  }
+
+  const key = 'prediction:' + round + ':' + name.toLowerCase();
+  const existing = await getJSON(key);
+  const raceInfo = CALENDAR.find(r => r.round === round);
+  const now = new Date().toISOString();
+  const payload = {
+    ...(existing || {}),
+    round, raceName: raceInfo.name, name,
+    race: Array.isArray(existing?.race) ? existing.race : [],
+    fastestLap: existing?.fastestLap || '',
+    pole,
+    submittedAt: existing?.submittedAt || now,
+    poleSubmittedAt: existing?.pole === pole ? (existing.poleSubmittedAt || now) : now
+  };
+
+  const ok = await setJSON(key, payload);
+  msg.innerHTML = ok
+    ? '<div class="msg ok">Pole Position prognoze saglabāta. TOP 10 vari aizpildīt vēlāk.</div>'
+    : '<div class="msg err">Pole Position prognozi neizdevās saglabāt.</div>';
+});
+
+document.getElementById('userName').addEventListener('change', () => {
+  if (selectedRaceRound) selectRace(selectedRaceRound);
+});
 
 /* ---------------- scoring ---------------- */
 // Mirrors the spreadsheet formula:
@@ -1058,100 +1325,77 @@ function getPredictionBreakdown(pred, actual) {
     );
   });
 }
-function renderPredictionBreakdown(prediction, result) {
+function renderPredictionBreakdown(prediction, result, multiplier = 1) {
   const box = document.getElementById('predictionScoreBreakdown');
-
-  const points = getPredictionBreakdown(
-    prediction.race,
-    result.race
-  );
+  const predictedRace = Array.isArray(prediction.race) ? prediction.race : [];
+  const basePoints = getPredictionBreakdown(predictedRace, result.race);
+  const m = multiplier === 2 ? 2 : 1;
 
   let html = `
     <div class="card">
-      <h3>Tavas prognozes rezultāts</h3>
+      <h3>${escapeHTML(prediction.name)} — prognoze ${m === 2 ? '(2× punkti)' : ''}</h3>
   `;
 
-  prediction.race.forEach((driver, i) => {
-
-    const pts = points[i];
-
+  if (!predictedRace.length) {
+    html += '<p class="lede">Šis spēlētājs iesniedza tikai Pole Position prognozi.</p>';
+  }
+  predictedRace.forEach((driver, i) => {
+    const pts = (basePoints[i] || 0) * m;
     html += `
       <div class="prediction-score-row">
-
         <strong>P${i + 1}</strong>
-
-        <div>
-          ${driverLabel(driver)}
-        </div>
-
-        <div class="prediction-score-points ${pts === 0 ? 'zero' : 'good'}">
-          +${pts}
-        </div>
-
-      </div>
-    `;
+        <div>${driverLabel(driver)}</div>
+        <div class="prediction-score-points ${pts ? 'good' : 'zero'}">+${pts}</div>
+      </div>`;
   });
 
-  const polePoints =
-    prediction.pole === result.pole
-      ? POLE_BONUS
-      : 0;
-
-  const fastestPoints =
-    prediction.fastestLap === result.fastestLap
-      ? FASTEST_LAP_BONUS
-      : 0;
+  const polePoints = (prediction.pole && prediction.pole === result.pole ? POLE_BONUS : 0) * m;
+  const fastestPoints = (prediction.fastestLap && prediction.fastestLap === result.fastestLap ? FASTEST_LAP_BONUS : 0) * m;
 
   html += `
     <div class="prediction-score-row">
-      <strong>POLE</strong>
-      <div>${driverLabel(prediction.pole)}</div>
-      <div class="prediction-score-points ${polePoints ? 'good' : 'zero'}">
-        +${polePoints}
-      </div>
+      <strong>POLE</strong><div>${driverLabel(prediction.pole)}</div>
+      <div class="prediction-score-points ${polePoints ? 'good' : 'zero'}">+${polePoints}</div>
     </div>
-
     <div class="prediction-score-row">
-      <strong>FL</strong>
-      <div>${driverLabel(prediction.fastestLap)}</div>
-      <div class="prediction-score-points ${fastestPoints ? 'good' : 'zero'}">
-        +${fastestPoints}
-      </div>
-    </div>
-  `;
+      <strong>FL</strong><div>${driverLabel(prediction.fastestLap)}</div>
+      <div class="prediction-score-points ${fastestPoints ? 'good' : 'zero'}">+${fastestPoints}</div>
+    </div>`;
 
-  const total =
-    points.reduce((sum, p) => sum + p, 0)
-    + polePoints
-    + fastestPoints;
-
-  html += `
-      <div class="prediction-total">
-        Kopā: ${total} punkti
-      </div>
-    </div>
-  `;
-
+  const total = basePoints.reduce((sum, p) => sum + p, 0) * m + polePoints + fastestPoints;
+  html += `<div class="prediction-total">Kopā: ${total} punkti</div></div>`;
   box.innerHTML = html;
   box.style.display = 'block';
 }
-async function scoreRound(round, result){
-  const keys = await listKeys('prediction:'+round+':');
-  for(const key of keys){
+
+async function scoreRound(round, result) {
+  // Atcelta posma punktus neuzkrājam.
+  if (await getJSON('cancelled:' + round)) return { scored: 0, failed: 0 };
+  const multiplier = await getRoundMultiplier(round);
+  const keys = await listKeys('prediction:' + round + ':');
+  let scored = 0, failed = 0;
+  for (const key of keys) {
     const pred = await getJSON(key);
-    if(!pred) continue;
-    const rp = scoreRace(pred.race, result.race);
+    if (!pred || !pred.name) continue;
+    const rp = scoreRace(Array.isArray(pred.race) ? pred.race : [], result.race);
     const bp = scoreBonus(pred.pole, pred.fastestLap, result.pole, result.fastestLap);
-    await setJSON('score:'+round+':'+pred.name.toLowerCase(), {
-      round, name:pred.name, racePoints:rp, bonusPoints:bp, total:rp+bp
+    const ok = await setJSON('score:' + round + ':' + pred.name.toLowerCase(), {
+      round, name: pred.name,
+      racePoints: rp * multiplier,
+      bonusPoints: bp * multiplier,
+      total: (rp + bp) * multiplier,
+      multiplier
     });
+    if (ok) scored++; else failed++;
   }
+  return { scored, failed };
 }
+
 
 /* ---------------- results tab ---------------- */
 function driverLabel(code){
   const d = DRIVER_MAP[code];
-  if(!d) return code || '—';
+  if(!d) return escapeHTML(code || '—');
   return `<span class="team-dot" style="background:${d.color}"></span>${d.name}`;
 }
 async function renderResultsTab(){
@@ -1339,7 +1583,7 @@ async function renderResultsTab(){
                 Posma rezultatīvākā prognoze:
 
                 <b style="color:var(--text);">
-                  ${top.name}
+                  ${escapeHTML(top.name)}
                 </b>
 
                 — ${top.total} pts
@@ -1375,13 +1619,216 @@ async function renderLeaderboard(){
   body.innerHTML = sorted.map((row,i)=>`
     <tr>
       <td class="rank ${i===0?'gold':''}">${i+1}</td>
-      <td>${row.name}</td>
+      <td>${escapeHTML(row.name)}</td>
       <td class="pts">${row.total}</td>
       <td class="pts">${row.rounds}</td>
       <td class="pts">${row.best}</td>
     </tr>`).join('');
 }
+/* ---------------- Kopvērtējuma līkņu grafiks ---------------- */
 
+let scoreChartInstance = null;
+
+async function renderScoreChart() {
+  const canvas = document.getElementById('scoreChart');
+  const message = document.getElementById('scoreChartMessage');
+  const mode = document.getElementById('chartMode').value;
+
+  message.textContent = 'Ielādē grafiku...';
+
+  if (!window.Chart) {
+    message.textContent = 'Chart.js bibliotēku neizdevās ielādēt.';
+    return;
+  }
+
+  try {
+    // Iegūst punktus un pabeigto / atcelto posmu sarakstu
+    const [scoresResult, resultKeys, cancelledKeys] = await Promise.all([
+      supabaseClient
+        .from('f1_storage')
+        .select('key, value')
+        .like('key', 'score:%')
+        .limit(1000),
+
+      listKeys('result:'),
+      listKeys('cancelled:')
+    ]);
+
+    if (scoresResult.error) throw scoresResult.error;
+
+    const finished = new Set(
+      resultKeys.map(k => Number(k.split(':')[1]))
+    );
+
+    const cancelled = new Set(
+      cancelledKeys.map(k => Number(k.split(':')[1]))
+    );
+
+    const players = new Map();
+    const roundsFound = new Set();
+
+    for (const row of scoresResult.data || []) {
+      const score = row.value;
+
+      if (!score || !score.name) continue;
+
+      const round = Number(score.round);
+      const points = Number(score.total);
+
+      if (!Number.isInteger(round) ||
+          !Number.isFinite(points) ||
+          !finished.has(round) ||
+          cancelled.has(round)) {
+        continue;
+      }
+
+      const playerKey = score.name.trim().toLowerCase();
+
+      if (!players.has(playerKey)) {
+        players.set(playerKey, {
+          name: score.name,
+          points: new Map()
+        });
+      }
+
+      players.get(playerKey).points.set(round, points);
+      roundsFound.add(round);
+    }
+
+    const rounds = [...roundsFound].sort((a, b) => a - b);
+
+    // Noņem iepriekšējo grafiku
+    if (scoreChartInstance) {
+      scoreChartInstance.destroy();
+      scoreChartInstance = null;
+    }
+
+    if (!rounds.length) {
+      message.textContent =
+        'Pagaidām nav novērtētu sacīkšu, ko attēlot grafikā.';
+      return;
+    }
+
+    // Sakārto spēlētājus pēc kopējiem punktiem
+    const sortedPlayers = [...players.values()].sort((a, b) => {
+      const totalA = [...a.points.values()].reduce((s, p) => s + p, 0);
+      const totalB = [...b.points.values()].reduce((s, p) => s + p, 0);
+      return totalB - totalA;
+    });
+
+    const colors = [
+      '#e10600', '#00d2be', '#ffb200', '#5b8cff',
+      '#ff66c4', '#40df80', '#bd89ff', '#ff8c42',
+      '#34d5ed', '#eeeeee'
+    ];
+
+    const datasets = sortedPlayers.map((player, index) => {
+      let cumulative = 0;
+      let started = false;
+
+      const values = rounds.map(round => {
+        if (player.points.has(round)) {
+          started = true;
+          const racePoints = player.points.get(round);
+          cumulative += racePoints;
+
+          return mode === 'cumulative'
+            ? cumulative
+            : racePoints;
+        }
+
+        // Kopvērtējumā saglabā līdzšinējo summu;
+        // atsevišķo posmu skatā neizdomā punktus.
+        return mode === 'cumulative' && started
+          ? cumulative
+          : null;
+      });
+
+      const color = colors[index % colors.length];
+
+      return {
+        label: player.name,
+        data: values,
+        borderColor: color,
+        backgroundColor: color,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        tension: 0.2,
+        spanGaps: false
+      };
+    });
+
+    scoreChartInstance = new Chart(canvas, {
+      type: 'line',
+
+      data: {
+        labels: rounds.map(round => 'S' + round),
+        datasets
+      },
+
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#eef0f2',
+              usePointStyle: true,
+              padding: 16
+            }
+          },
+
+          tooltip: {
+            callbacks: {
+              label: context =>
+                context.dataset.label + ': ' +
+                context.parsed.y + ' punkti'
+            }
+          }
+        },
+
+        scales: {
+          x: {
+            ticks: { color: '#9aa0a6' },
+            grid: { color: 'rgba(255,255,255,0.05)' }
+          },
+
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: '#9aa0a6',
+              precision: 0
+            },
+            grid: { color: 'rgba(255,255,255,0.10)' },
+            title: {
+              display: true,
+              text: 'Punkti',
+              color: '#9aa0a6'
+            }
+          }
+        }
+      }
+    });
+
+    message.textContent =
+      'Uzspied uz spēlētāja vārda leģendā, lai paslēptu vai parādītu viņa līniju.';
+
+  } catch (error) {
+    console.error('Score chart error:', error);
+    message.textContent = 'Neizdevās ielādēt grafika datus.';
+  }
+}
+
+document.getElementById('chartMode')
+  .addEventListener('change', renderScoreChart);
 /* ---------------- admin ---------------- */
 document.getElementById('adminUnlockBtn').addEventListener('click', async () => {
 
@@ -1437,7 +1884,7 @@ async function populateManagePlayerSelect(){
   }
   const sorted = [...names.values()].sort((a,b)=>a.localeCompare(b));
   sel.innerHTML = sorted.length
-    ? sorted.map(n=>`<option value="${n}">${n}</option>`).join('')
+    ? sorted.map(n=>`<option value="${escapeHTML(n)}">${escapeHTML(n)}</option>`).join('')
     : '<option value="">No players yet</option>';
 }
 
@@ -1457,19 +1904,25 @@ document.getElementById('deletePlayerBtn').addEventListener('click', async ()=>{
 
 async function renderAdminRaceStrip(){
   const strip = document.getElementById('adminRaceStrip');
+
+  // Saglabā Admin slaidera pozīciju
+  const savedScrollLeft = strip.scrollLeft;
+
   strip.innerHTML = '';
   const doneRounds = new Set((await listKeys('result:')).map(k=>k.split(':')[1]));
   const cancelledRounds = new Set(
   (await listKeys('cancelled:')).map(k => k.split(':')[1])
 );
+  const doubleRounds = new Set((await listKeys('double:')).map(k=>k.split(':')[1]));
   CALENDAR.forEach(r=>{
     const chip = document.createElement('div');
     const isCancelled = cancelledRounds.has(String(r.round));
 const isDone = doneRounds.has(String(r.round));
+const isDouble = !isCancelled && doubleRounds.has(String(r.round));
 
 chip.className =
   'chip' +
-  (isCancelled ? ' cancelled' : (isDone ? ' done' : '')) +
+  (isCancelled ? ' cancelled' : (isDone ? ' done' : '')) + (isDouble ? ' double' : '') +
   (r.round === adminSelectedRound ? ' selected' : '');
     
 chip.innerHTML = `
@@ -1479,11 +1932,15 @@ chip.innerHTML = `
   <span class="race-info">
     <b>S${r.round}</b>
     <span>${r.circuit}</span>
+    ${doubleRounds.has(String(r.round)) ? '<span class="double-marker">2× PUNKTI</span>' : ''}
   </span>
 `;
-    chip.addEventListener('click', ()=>selectAdminRace(r.round));
+        chip.addEventListener('click', ()=>selectAdminRace(r.round));
     strip.appendChild(chip);
   });
+
+  // Atjauno Admin slaidera pozīciju
+  strip.scrollLeft = savedScrollLeft;
 }
 
 async function updateCancelRaceButton() {
@@ -1518,17 +1975,98 @@ if (cancelled) {
   saveBtn.textContent = 'Saglabāt rezultātus; un novērtēt prognozes';
 }
 }
+function updateDoublePointsButton(isDouble) {
+  const btn = document.getElementById('toggleDoublePointsBtn');
+
+  btn.textContent = isDouble
+    ? '2× punkti — pārslēgt uz 1×'
+    : '1× punkti — pārslēgt uz 2×';
+
+  btn.classList.toggle('active-double', isDouble);
+}
 async function selectAdminRace(round){
   adminSelectedRound = round;
   await renderAdminRaceStrip();
   await updateCancelRaceButton();
   document.getElementById('adminFormWrap').style.display='block';
   const existing = await getJSON('result:'+round);
+  const isDouble = await getRoundMultiplier(round) === 2;
+
+  updateDoublePointsButton(isDouble);
+
+  document.getElementById('doublePointsMsg').innerHTML = '';
   ['ar1','ar2','ar3','ar4','ar5','ar6','ar7','ar8','ar9','ar10'].forEach((id,i)=>document.getElementById(id).value = existing? existing.race[i]:'' );
   document.getElementById('apole').value = existing ? (existing.pole||'') : '';
   document.getElementById('afastestLap').value = existing ? (existing.fastestLap||'') : '';
   document.getElementById('adminMsg').innerHTML = existing ? '<div class="msg info">This round already has a saved result — saving again will overwrite and re-score it.</div>' : '';
 }
+
+document.getElementById('toggleDoublePointsBtn').addEventListener('click', async () => {
+
+  const btn = document.getElementById('toggleDoublePointsBtn');
+  const msg = document.getElementById('doublePointsMsg');
+
+  if (!adminUnlocked || !adminSelectedRound) {
+    msg.innerHTML =
+      '<div class="msg err">Vispirms ielogojies un izvēlies sacīksti.</div>';
+    return;
+  }
+
+  const round = adminSelectedRound;
+
+  btn.disabled = true;
+
+  try {
+    const current = await getRoundMultiplier(round);
+
+    // Ja pašlaik 1×, ieslēdzam 2×; pretējā gadījumā 1×
+    const isDouble = current === 1;
+
+    const ok = isDouble
+      ? await setJSON('double:' + round, true)
+      : await deleteKey('double:' + round);
+
+    if (!ok) {
+      msg.innerHTML =
+        '<div class="msg err">Punktu režīmu neizdevās saglabāt.</div>';
+      return;
+    }
+
+    if (adminSelectedRound === round) {
+      updateDoublePointsButton(isDouble);
+    }
+
+    // Ja sacīkstes rezultāts jau ir ievadīts,
+    // automātiski pārrēķinām punktus
+    const result = await getJSON('result:' + round);
+
+    let failed = 0;
+
+    if (result) {
+      const scoring = await scoreRound(round, result);
+      failed = scoring.failed;
+    }
+
+    // Atjaunojam abas sacīkšu izvēlnes un kopvērtējumu
+    await renderAdminRaceStrip();
+    await renderRaceStrip();
+    await renderLeaderboard();
+
+    msg.innerHTML = failed
+      ? `<div class="msg err">Režīms saglabāts, bet ${failed} spēlētājiem punktus neizdevās pārrēķināt.</div>`
+      : `<div class="msg ok">S${round}: ${isDouble ? '2×' : '1×'} punkti aktīvi.</div>`;
+
+  } catch (e) {
+    console.error('2× toggle error:', e);
+
+    msg.innerHTML =
+      '<div class="msg err">Kļūda, pārslēdzot punktus.</div>';
+
+  } finally {
+    btn.disabled = false;
+  }
+
+});
 
 async function saveResultFromForm(round, race, pole, fastestLap){
   if(race.some(v=>!v)) return {ok:false, error:'Fill in every race position.'};
@@ -1538,7 +2076,8 @@ async function saveResultFromForm(round, race, pole, fastestLap){
   const result = {round, raceName: raceInfo? raceInfo.name : ('Round '+round), race, pole, fastestLap, enteredAt:new Date().toISOString()};
   const ok = await setJSON('result:'+round, result);
   if(!ok) return {ok:false, error:'Storage write failed.'};
-  await scoreRound(round, result);
+  const scoring = await scoreRound(round, result);
+  if (scoring.failed) return {ok:false, error:`Rezultāts saglabāts, bet ${scoring.failed} spēlētājiem punkti netika saglabāti.`};
   return {ok:true};
 }
 
@@ -1692,7 +2231,8 @@ document.getElementById('dlPredictions').addEventListener('click', async ()=>{
   for(const k of keys){
     const p = await getJSON(k);
     if(!p) continue;
-    rows.push([p.round,p.raceName,p.name,...p.race,p.pole||'',p.fastestLap||'',p.submittedAt]);
+    const race = Array.from({length:10}, (_, i) => Array.isArray(p.race) ? (p.race[i] || '') : '');
+    rows.push([p.round,p.raceName,p.name,...race,p.pole||'',p.fastestLap||'',p.submittedAt]);
   }
   downloadCSV('f1-2026-predictions.csv', rows);
 });
@@ -1741,9 +2281,21 @@ document.getElementById('predCsvBtn').addEventListener('click', async ()=>{
     const fastestLap = obj.fastestlap || '';
     const badPole = pole && !DRIVER_MAP[pole];
     const badFL = fastestLap && !DRIVER_MAP[fastestLap];
-    if(!round || !name || badPole || badFL || race.some(v=>!DRIVER_MAP[v])){ errors++; continue; }
+    const hasRace = race.some(Boolean);
+    const validRace = !hasRace || (race.every(v=>DRIVER_MAP[v]) && new Set(race).size === 10);
+    if(!CALENDAR.some(r=>r.round===round) || !name || badPole || badFL || !validRace || (!pole && !hasRace)) { errors++; continue; }
     const raceInfo = CALENDAR.find(r=>r.round===round);
-    const ok = await setJSON('prediction:'+round+':'+name.toLowerCase(), {round, raceName: raceInfo?raceInfo.name:('Round '+round), name, race, pole, fastestLap, submittedAt:new Date().toISOString()});
+    const key = 'prediction:'+round+':'+name.toLowerCase();
+    const existing = await getJSON(key);
+    const now = new Date().toISOString();
+    const newPole = pole || existing?.pole || '';
+    const ok = await setJSON(key, {
+      ...(existing || {}), round, raceName: raceInfo.name, name,
+      race: hasRace ? race : (existing?.race || []),
+      pole: newPole, fastestLap: fastestLap || existing?.fastestLap || '',
+      submittedAt: now,
+      poleSubmittedAt: newPole !== existing?.pole ? now : (existing?.poleSubmittedAt || now)
+    });
     if(ok) count++; else errors++;
   }
   msg.innerHTML = `<div class="msg ${errors?'err':'ok'}">Imported ${count} prediction row(s)${errors?`, ${errors} row(s) skipped (bad round/driver code)`:''}.</div>`;
