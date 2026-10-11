@@ -926,6 +926,19 @@ document.querySelectorAll('select').forEach(select => {
   });
 });
 
+/* Pārvieto TIKAI horizontālo slaideri, nepārbīdot visu lapu. */
+function centerSelectedRaceChip(strip) {
+  const selected = strip.querySelector('.chip.selected');
+  if (!selected) return;
+
+  const stripRect = strip.getBoundingClientRect();
+  const chipRect = selected.getBoundingClientRect();
+  const targetLeft = strip.scrollLeft + chipRect.left - stripRect.left
+    - (strip.clientWidth - selected.clientWidth) / 2;
+
+  strip.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+}
+
 /* ---------------- next race banner ---------------- */
 function renderNextRaceBanner(){
   const box = document.getElementById('nextRaceBox');
@@ -962,21 +975,39 @@ function renderNextRaceBanner(){
   box.style.cursor = 'pointer';
 
   box.onclick = async () => {
-    // Izvēlas nākamo sacīksti
-    await selectRace(upcomingRace.round);
+    // Admin sadaļā izmantojam Admin slaideri un paliekam Admin lapā.
+    const adminTabIsActive = document.getElementById('tab-admin').classList.contains('active');
 
-    // Atrod sacīkšu slaideri
-    const strip = document.getElementById('raceStrip');
-    const selectedChip = strip.querySelector('.chip.selected');
+    if (adminTabIsActive) {
+      // Ja nav pieslēdzies, parādām Admin pieslēgšanās vietu.
+      if (!adminUnlocked) {
+        document.getElementById('adminGate').scrollIntoView({
+          behavior: 'smooth', block: 'start'
+        });
+        return;
+      }
 
-    // Horizontāli pabīda slaideri līdz izvēlētajai sacīkstei
-    if (selectedChip) {
-      selectedChip.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center'
+      await selectAdminRace(upcomingRace.round);
+      const adminStrip = document.getElementById('adminRaceStrip');
+      centerSelectedRaceChip(adminStrip);
+      adminStrip.closest('.card').scrollIntoView({
+        behavior: 'smooth', block: 'start'
       });
+      return;
     }
+
+    // Jebkurā citā sadaļā atveram Prognozes (aktivizējam esošo navigāciju).
+    document.querySelector('nav button[data-tab="predict"]').click();
+
+    // Izvēlamies nākamo posmu un parādām tā prognozēšanas formu.
+    await selectRace(upcomingRace.round);
+    const predictStrip = document.getElementById('raceStrip');
+    centerSelectedRaceChip(predictStrip);
+
+    // Redzams gan vārda lauks, gan posmu izvēle un prognozes forma.
+    document.getElementById('tab-predict').scrollIntoView({
+      behavior: 'smooth', block: 'start'
+    });
   };
 }
 
