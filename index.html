@@ -487,6 +487,27 @@ input[type=file] {
 [hidden] {
   display: none !important;
 }
+/* Spēlētāju avatari */
+.f1-profile-heading { display:flex; align-items:center; gap:14px; margin:4px 0 12px; }
+.f1-avatar { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+  width:46px; height:46px; border-radius:50%; overflow:hidden; border:2px solid rgba(255,255,255,.23);
+  color:#fff; font-size:25px; line-height:1; font-weight:800; font-family:var(--font-head3); }
+.f1-avatar img { display:block; width:100%; height:100%; object-fit:cover; }
+.f1-avatar.big { width:76px; height:76px; font-size:40px; border-width:3px; }
+.f1-avatar.tiny { width:30px; height:30px; font-size:17px; border-width:1px; }
+.f1-player-name { display:inline-flex; align-items:center; gap:10px; }
+.avatar-editor { border-top:1px solid var(--line); margin-top:15px; padding-top:16px; }
+.avatar-picker { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 12px; }
+.avatar-option { width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+  font-size:24px; color:white; background:var(--asphalt-2); border:1px solid var(--line);
+  border-radius:9px; cursor:pointer; }
+.avatar-option:hover, .avatar-option[aria-pressed="true"] { border-color:var(--amber); background:#342916; }
+.avatar-color-row { display:flex; align-items:center; gap:12px; }
+#avatarColor { width:52px; height:38px; background:transparent; border:none; cursor:pointer; }
+.avatar-upload-info { color:var(--muted); font-size:12px; margin-top:6px; }
+.avatar-editor .filerow { margin-top:10px; }
+.avatar-message { margin-top:10px; font-size:13px; }
+.player-chip { display:inline-flex; align-items:center; justify-content:center; gap:9px; }
 </style>
 </head>
 <body>
@@ -518,9 +539,10 @@ input[type=file] {
     <div class="card" id="playerLoginCard">
   <h3>Spēlētāja konts</h3>
 
-  <label>Spēlētāja vārds (tikai jaunai reģistrācijai)</label>
-  <input type="text" id="playerRegisterName" maxlength="24"
-         placeholder="Piemēram, Jānis">
+  <label for="playerRegisterName">Spēlētāja vārds (tikai jaunai reģistrācijai)</label>
+  <input type="text" id="playerRegisterName" minlength="2" maxlength="24"
+         autocomplete="nickname" placeholder="Piemēram, Jānis">
+  <div class="helptext">Unikāls vārds: 2–24 rakstzīmes, burti, cipari, atstarpes, _ . -</div>
 
   <label>E-pasts</label>
   <input type="email" id="playerEmail"
@@ -549,16 +571,42 @@ input[type=file] {
 <div class="card" id="playerProfileCard" hidden>
   <h3>Mans profils</h3>
 
-  <div id="playerAvatarPreview"></div>
-  <strong id="playerDisplayName"></strong>
+  <div class="f1-profile-heading">
+    <div id="playerAvatarPreview" aria-label="Tavs avatars"></div>
+    <strong id="playerDisplayName"></strong>
+  </div>
 
-  <button class="btn secondary" id="editAvatarBtn">
+  <button class="btn secondary" id="editAvatarBtn" type="button">
     Rediģēt avataru
   </button>
-
-  <button class="btn secondary" id="playerLogoutBtn">
+  <button class="btn secondary" id="playerLogoutBtn" type="button">
     Izlogoties
   </button>
+
+  <div class="avatar-editor" id="avatarEditor" hidden>
+    <h3>Izvēlies savu avataru</h3>
+    <p class="helptext">Izvēlies simbolu vai augšupielādē savu attēlu. Izmaiņas redzēs arī citi spēlētāji.</p>
+    <div class="f1-profile-heading">
+      <div id="avatarDraftPreview"></div>
+      <span class="helptext">Priekšskatījums pirms saglabāšanas</span>
+    </div>
+    <label>F1 simbols</label>
+    <div id="avatarEmojiChoices" class="avatar-picker" role="group" aria-label="Avataru simboli"></div>
+    <label for="avatarColor">Fona krāsa</label>
+    <div class="avatar-color-row">
+      <input type="color" id="avatarColor" value="#e10600">
+      <span class="helptext">Krāsa redzama simboliem un iniciāļiem</span>
+    </div>
+    <label for="avatarPhotoFile">Vai augšupielādē fotoattēlu</label>
+    <input id="avatarPhotoFile" type="file" accept="image/png,image/jpeg,image/webp">
+    <div class="avatar-upload-info">JPEG, PNG vai WebP, līdz 3 MB. Attēls automātiski tiek samazināts.</div>
+    <div class="filerow">
+      <button class="btn" type="button" id="saveAvatarBtn">Saglabāt avataru</button>
+      <button class="btn secondary" type="button" id="cancelAvatarBtn">Atcelt</button>
+      <button class="btn secondary" type="button" id="resetAvatarBtn">Iniciāļi</button>
+    </div>
+    <div id="avatarEditMsg" class="avatar-message" role="status"></div>
+  </div>
 </div>
 <!-- PAROLES IZVEIDOŠANA PĒC UZAICINĀJUMA -->
 <div class="card" id="setPasswordCard" hidden>
@@ -911,7 +959,10 @@ async function registerPlayer(email, password, username) {
     await supabaseClient.auth.signUp({
       email,
       password,
-      options: { data: { username } }
+      options: {
+        data: { username },
+        emailRedirectTo: window.location.origin + window.location.pathname
+      }
     });
 
   if (error) throw error;
@@ -976,6 +1027,190 @@ let currentPlayer = null;
 let currentPlayerProfile = null;
 let authRenderNonce = 0;
 
+
+/* ---------------- AVATARU REDAKTORS ---------------- */
+// Attēli tiek glabāti paša lietotāja f1_profiles.avatar JSONB kolonnā.
+// Neizmanto Supabase Storage vai papildu API atslēgas.
+const F1_EMOJIS = ['🏎️','🏁','🏆','🪖','⚡','🔥','🚀','🦊','🐺','🦁','😎','💎'];
+const F1_AVATAR_COLOR = '#e10600';
+let avatarDraft = { kind:'initials', color:F1_AVATAR_COLOR };
+let avatarUploadBusy = false;
+
+function safeAvatar(raw) {
+  const a = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const color = typeof a.color === 'string' && /^#[a-f0-9]{6}$/i.test(a.color)
+    ? a.color : F1_AVATAR_COLOR;
+  if (a.kind === 'image' && typeof a.image === 'string' &&
+      /^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(a.image) &&
+      a.image.length <= 45000) {
+    return { kind:'image', color, image:a.image };
+  }
+  if (a.kind === 'emoji' && F1_EMOJIS.includes(a.emoji)) {
+    return { kind:'emoji', color, emoji:a.emoji };
+  }
+  return { kind:'initials', color };
+}
+
+function createF1Avatar(raw, username, size='normal') {
+  const a = safeAvatar(raw);
+  const el = document.createElement('span');
+  el.className = 'f1-avatar' + (size === 'big' ? ' big' : size === 'tiny' ? ' tiny' : '');
+  el.style.backgroundColor = a.color;
+  if (a.kind === 'image') {
+    const img = document.createElement('img');
+    img.alt = 'Avatars: ' + String(username || 'Spēlētājs');
+    img.src = a.image;
+    el.appendChild(img);
+  } else if (a.kind === 'emoji') {
+    el.textContent = a.emoji;
+  } else {
+    el.textContent = (String(username || '?').trim()[0] || '?').toLocaleUpperCase('lv');
+  }
+  return el;
+}
+
+function renderPlayerAvatar() {
+  const root = document.getElementById('playerAvatarPreview');
+  root.replaceChildren();
+  if (currentPlayerProfile) {
+    root.appendChild(createF1Avatar(currentPlayerProfile.avatar, currentPlayerProfile.username, 'big'));
+  }
+}
+function renderDraftAvatar() {
+  const root = document.getElementById('avatarDraftPreview');
+  root.replaceChildren(createF1Avatar(avatarDraft, currentPlayerProfile?.username || '?', 'big'));
+  document.getElementById('avatarColor').value = avatarDraft.color;
+  document.querySelectorAll('.avatar-option').forEach(btn => {
+    btn.setAttribute('aria-pressed', String(avatarDraft.kind === 'emoji' && btn.dataset.emoji === avatarDraft.emoji));
+  });
+}
+
+const avatarPicker = document.getElementById('avatarEmojiChoices');
+F1_EMOJIS.forEach(emoji => {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'avatar-option';
+  btn.dataset.emoji = emoji;
+  btn.setAttribute('aria-label', 'Izvēlēties ' + emoji);
+  btn.setAttribute('aria-pressed', 'false');
+  btn.textContent = emoji;
+  btn.addEventListener('click', () => {
+    avatarDraft = { kind:'emoji', color:avatarDraft.color, emoji };
+    document.getElementById('avatarPhotoFile').value = '';
+    document.getElementById('avatarEditMsg').textContent = '';
+    renderDraftAvatar();
+  });
+  avatarPicker.appendChild(btn);
+});
+
+document.getElementById('editAvatarBtn').addEventListener('click', () => {
+  if (!currentPlayerProfile) return;
+  const editor = document.getElementById('avatarEditor');
+  editor.hidden = !editor.hidden;
+  if (!editor.hidden) {
+    avatarDraft = safeAvatar(currentPlayerProfile.avatar);
+    document.getElementById('avatarPhotoFile').value = '';
+    document.getElementById('avatarEditMsg').textContent = '';
+    renderDraftAvatar();
+    editor.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+});
+document.getElementById('cancelAvatarBtn').addEventListener('click', () => {
+  document.getElementById('avatarEditor').hidden = true;
+  document.getElementById('avatarPhotoFile').value = '';
+});
+document.getElementById('resetAvatarBtn').addEventListener('click', () => {
+  avatarDraft = {kind:'initials', color:avatarDraft.color};
+  document.getElementById('avatarPhotoFile').value = '';
+  renderDraftAvatar();
+});
+document.getElementById('avatarColor').addEventListener('input', event => {
+  avatarDraft.color = event.target.value;
+  renderDraftAvatar();
+});
+
+// Samazina augšupielādētos attēlus līdz 160x160, lai JSONB profils neuzkrātu lielus failus.
+function shrinkAvatarImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 160;
+        canvas.height = 160;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Pārlūks nevar apstrādāt attēlu.');
+        const side = Math.min(image.naturalWidth, image.naturalHeight);
+        ctx.drawImage(image,
+          (image.naturalWidth-side)/2, (image.naturalHeight-side)/2, side, side,
+          0, 0, 160, 160);
+        const result = canvas.toDataURL('image/jpeg', 0.78);
+        if (result.length > 45000) throw new Error('Attēls pārāk liels pēc samazināšanas.');
+        resolve(result);
+      } catch (e) { reject(e); }
+      finally { URL.revokeObjectURL(url); }
+    };
+    image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Nevar atvērt šo attēlu.')); };
+    image.src = url;
+  });
+}
+document.getElementById('avatarPhotoFile').addEventListener('change', async event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const msg = document.getElementById('avatarEditMsg');
+  if (!['image/png','image/jpeg','image/webp'].includes(file.type) || file.size > 3*1024*1024) {
+    msg.textContent = 'Izvēlies JPG, PNG vai WebP attēlu līdz 3 MB.';
+    event.target.value = '';
+    return;
+  }
+  avatarUploadBusy = true;
+  document.getElementById('saveAvatarBtn').disabled = true;
+  msg.textContent = 'Apstrādāju attēlu...';
+  try {
+    const image = await shrinkAvatarImage(file);
+    avatarDraft = { kind:'image', color:avatarDraft.color, image };
+    renderDraftAvatar();
+    msg.textContent = 'Attēls sagatavots. Nospied „Saglabāt avataru”.';
+  } catch (error) {
+    msg.textContent = 'Attēla kļūda: ' + error.message;
+  } finally {
+    avatarUploadBusy = false;
+    document.getElementById('saveAvatarBtn').disabled = false;
+  }
+});
+
+document.getElementById('saveAvatarBtn').addEventListener('click', async () => {
+  if (!currentPlayer || !currentPlayerProfile || avatarUploadBusy) return;
+  const button = document.getElementById('saveAvatarBtn');
+  const msg = document.getElementById('avatarEditMsg');
+  const avatar = safeAvatar(avatarDraft);
+  const userId = currentPlayer.id;
+  button.disabled = true;
+  msg.textContent = 'Saglabāju avataru...';
+  try {
+    const {data, error} = await supabaseClient.from('f1_profiles')
+      .update({avatar}).eq('id', userId)
+      .select('avatar').single();
+    if (error) throw error;
+    if (!currentPlayer || currentPlayer.id !== userId || !currentPlayerProfile) return;
+    currentPlayerProfile.avatar = data.avatar;
+    renderPlayerAvatar();
+    document.getElementById('avatarEditor').hidden = true;
+    msg.textContent = '';
+    // Atjauno avatarus arī konkurentu sarakstā un kopvērtējumā.
+    if (document.getElementById('tab-leaderboard').classList.contains('active')) {
+      await renderLeaderboard();
+    }
+    if (selectedRaceRound) {
+      const finished = await getJSON('result:' + selectedRaceRound);
+      if (finished) await renderPlayerPredictionStrip(selectedRaceRound, finished);
+    }
+  } catch(error) {
+    msg.textContent = 'Avatara saglabāšanas kļūda: ' + error.message;
+  } finally { button.disabled = false; }
+});
+
 async function updatePlayerAuthUI(user) {
   const nonce = ++authRenderNonce;
   const loginCard = document.getElementById('playerLoginCard');
@@ -991,6 +1226,8 @@ async function updatePlayerAuthUI(user) {
   profileCard.hidden = !user;
   nameInput.value = '';
   nameInput.readOnly = true;
+  document.getElementById('avatarEditor').hidden = true;
+  document.getElementById('playerAvatarPreview').replaceChildren();
 
   if (!user) {
     displayName.textContent = '';
@@ -1031,6 +1268,7 @@ async function updatePlayerAuthUI(user) {
   }
 
   currentPlayerProfile = profile;
+  renderPlayerAvatar();
   displayName.textContent = profile.username;
   nameInput.value = profile.username; // tikai saderībai ar veco UI
   protectedContent.hidden = false;
@@ -1076,16 +1314,17 @@ async function loadPredictionsForRound(round) {
   const ids = [...new Set(rows.map(r => r.user_id))];
   const profilesResponse = await supabaseClient
     .from('f1_profiles')
-    .select('id, username')
+    .select('id, username, avatar')
     .in('id', ids);
   if (profilesResponse.error) throw profilesResponse.error;
-  const profileNames = new Map(
-    (profilesResponse.data || []).map(p => [p.id, p.username])
+  const profileMap = new Map(
+    (profilesResponse.data || []).map(p => [p.id, p])
   );
   return rows.map(p => ({
     user_id: p.user_id,
     round: p.round,
-    name: profileNames.get(p.user_id) || 'Nezināms spēlētājs',
+    name: profileMap.get(p.user_id)?.username || 'Nezināms spēlētājs',
+    avatar: profileMap.get(p.user_id)?.avatar || {},
     race: p.race || [],
     pole: p.pole || '',
     fastestLap: p.fastest_lap || ''
@@ -1122,8 +1361,9 @@ document.getElementById('playerRegisterBtn')
     const username = document.getElementById('playerRegisterName').value.trim();
     const msg = document.getElementById('playerAuthMsg');
 
-    if (username.length < 2 || username.length > 24) {
-      msg.textContent = 'Reģistrācijai ievadi spēlētāja vārdu (2–24 simboli).';
+    if (username.length < 2 || username.length > 24 ||
+        !/^[\p{L}\p{N}][\p{L}\p{N} _.-]*$/u.test(username)) {
+      msg.textContent = 'Lietotājvārdā jābūt 2–24 rakstzīmēm: burtiem, cipariem, atstarpēm, _ . -';
       return;
     }
     if (!email || password.length < 8) {
@@ -1132,7 +1372,18 @@ document.getElementById('playerRegisterBtn')
       return;
     }
 
+    const button = document.getElementById('playerRegisterBtn');
+    button.disabled = true;
     try {
+      // Pārbaude pirms Auth konta izveides, lai neatņemtu jau aizņemtu vārdu.
+      const { data: free, error: checkError } = await supabaseClient.rpc(
+        'f1_username_available', { p_username: username }
+      );
+      if (checkError) throw new Error('Vispirms izpildi Supabase profilu SQL: ' + checkError.message);
+      if (!free) {
+        msg.textContent = 'Šāds spēlētāja vārds jau ir aizņemts. Izvēlies citu.';
+        return;
+      }
       const data = await registerPlayer(email, password, username);
 
       msg.textContent = data.session
@@ -1140,6 +1391,8 @@ document.getElementById('playerRegisterBtn')
         : 'Pārbaudi e-pastu un apstiprini reģistrāciju.';
     } catch (error) {
       msg.textContent = 'Reģistrācijas kļūda: ' + error.message;
+    } finally {
+      button.disabled = false;
     }
   });
 
@@ -1582,7 +1835,10 @@ async function renderPlayerPredictionStrip(round, result) {
     btn.type = 'button';
     btn.className = 'player-chip';
     btn.dataset.player = prediction.name.toLowerCase();
-    btn.textContent = prediction.name;
+    btn.appendChild(createF1Avatar(prediction.avatar, prediction.name, 'tiny'));
+    const nameLabel = document.createElement('span');
+    nameLabel.textContent = prediction.name;
+    btn.appendChild(nameLabel);
     btn.addEventListener('click', () => showPlayer(prediction));
     strip.appendChild(btn);
   });
@@ -2062,14 +2318,23 @@ async function renderLeaderboard(){
     totals[key].best = Math.max(totals[key].best, s.total);
   }
   const sorted = Object.values(totals).sort((a,b)=>b.total-a.total);
+  let profiles = [];
+  const profileResult = await supabaseClient.from('f1_profiles').select('username, avatar');
+  if (!profileResult.error) profiles = profileResult.data || [];
+  const avatarByName = new Map(profiles.map(p => [p.username.trim().toLowerCase(), p.avatar]));
   body.innerHTML = sorted.map((row,i)=>`
     <tr>
       <td class="rank ${i===0?'gold':''}">${i+1}</td>
-      <td>${escapeHTML(row.name)}</td>
+      <td><span class="f1-player-name"><span class="leaderboard-avatar-slot"></span><span>${escapeHTML(row.name)}</span></span></td>
       <td class="pts">${row.total}</td>
       <td class="pts">${row.rounds}</td>
       <td class="pts">${row.best}</td>
     </tr>`).join('');
+  body.querySelectorAll('tr').forEach((tr, i) => {
+    tr.querySelector('.leaderboard-avatar-slot')?.appendChild(
+      createF1Avatar(avatarByName.get(sorted[i].name.trim().toLowerCase()), sorted[i].name, 'tiny')
+    );
+  });
 }
 /* ---------------- Kopvērtējuma līkņu grafiks ---------------- */
 
