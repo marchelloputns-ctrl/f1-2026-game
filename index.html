@@ -247,7 +247,20 @@ body {
   select {
   transition: background-color 0.2s ease;
   }
-
+  select,
+input[type=text],
+input[type=email],
+input[type=password],
+input[type=file] {
+  width: 100%;
+  background: var(--asphalt-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 9px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: var(--font-body);
+}
   .grid10{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
   .grid10 {
   display: grid;
@@ -471,7 +484,9 @@ body {
     margin-left: 0;
   }
 }
-
+[hidden] {
+  display: none !important;
+}
 </style>
 </head>
 <body>
@@ -500,12 +515,77 @@ body {
     <h2>Veic savu sacīkšu prognozi!</h2>
     <p class="lede">Ievadi savu vārdu, izvēlies sacīkšu nedēļas nogali un pēc tam norādi pirmos 10 finišētājus, kā arī "pole position" ieguvēju un ātrākā apļa pilotu. Prognozi vari mainīt jebkurā brīdī, pirms administrators nav fiksējis sacīkšu rezultātus.</p>
 
-    <div class="card">
-      <label>Tavs vārds</label>
-      <input type="text" id="userName" placeholder="piemēram, Jānis" autocomplete="off">
-      <div class="helptext">Izmanto, lai saglabātu un identificētu prognozes.</div>
-    </div>
+    <div class="card" id="playerLoginCard">
+  <h3>Spēlētāja konts</h3>
 
+  <label>Spēlētāja vārds (tikai jaunai reģistrācijai)</label>
+  <input type="text" id="playerRegisterName" maxlength="24"
+         placeholder="Piemēram, Jānis">
+
+  <label>E-pasts</label>
+  <input type="email" id="playerEmail"
+         placeholder="E-pasta adrese">
+
+  <label>Parole</label>
+  <input type="password" id="playerPassword"
+         placeholder="Parole">
+
+  <div class="filerow">
+    <button class="btn" id="playerLoginBtn">
+      Ielogoties
+    </button>
+
+    <button class="btn secondary" id="playerRegisterBtn">
+      Reģistrēties
+    </button>
+  </div>
+
+  <div id="playerAuthMsg"></div>
+</div>
+
+<div class="card" id="playerProfileCard" hidden>
+  <h3>Mans profils</h3>
+
+  <div id="playerAvatarPreview"></div>
+  <strong id="playerDisplayName"></strong>
+
+  <button class="btn secondary" id="editAvatarBtn">
+    Rediģēt avataru
+  </button>
+
+  <button class="btn secondary" id="playerLogoutBtn">
+    Izlogoties
+  </button>
+</div>
+<!-- PAROLES IZVEIDOŠANA PĒC UZAICINĀJUMA -->
+<div class="card" id="setPasswordCard" hidden>
+  <h3>Izveido sava F1 konta paroli</h3>
+
+  <label>Jaunā parole</label>
+  <input type="password"
+         id="newPlayerPassword"
+         minlength="8"
+         autocomplete="new-password"
+         placeholder="Vismaz 8 simboli">
+
+  <label>Atkārto paroli</label>
+  <input type="password"
+         id="confirmPlayerPassword"
+         autocomplete="new-password"
+         placeholder="Atkārto jauno paroli">
+
+  <button class="btn" id="setPlayerPasswordBtn" type="button">
+    Saglabāt paroli
+  </button>
+
+  <div id="setPlayerPasswordMsg"></div>
+</div>
+<div class="card" id="legacyUsernameCard" hidden>
+  <label>Tavs vārds</label>
+  <input type="text" id="userName" readonly>
+</div>
+
+    <div id="predictionsProtected" hidden>
     <div class="card">
       <h3>Izvēlies sacīkšu posmu</h3>
       <div class="row-strip" id="raceStrip"></div>
@@ -545,8 +625,9 @@ body {
         <p class="lede">Pēc rezultātu ievadīšanas izvēlies spēlētāju, lai apskatītu viņa prognozi un punktus.</p>
         <div class="row-strip" id="playerPredictionStrip"></div>
       </div>
-      <div id="predictionScoreBreakdown" style="display:none;"></div>
-  </section>
+       <div id="predictionScoreBreakdown" style="display:none;"></div>
+    </div><!-- predictionsProtected -->
+   </section>
 
   <!-- RESULTS TAB -->
   <section class="tab" id="tab-results">
@@ -697,13 +778,13 @@ body {
 
     <div class="card">
       <h3>Export current data</h3>
-      <div class="filerow"><a class="dl" id="dlPredictions">Export visas prognozes (CSV)</a></div>
+      <div class="filerow"><a class="dl" id="dlPredictions">Export visas prognozes (CSV — Admin)</a></div>
       <div class="filerow"><a class="dl" id="dlResults">Export patiesos rezultātus(CSV)</a></div>
       <div class="filerow"><a class="dl" id="dlLeaderboard">Export kopvērtējumu(CSV)</a></div>
     </div>
 
     <div class="card">
-      <h3>Import prognozes no CSV</h3>
+      <h3>Importēt prognozes no CSV (tikai Admin)</h3>
       <p class="lede">Kolonnas: <code>round,name,r1,r2,...,r10,pole,fastestlap</code> izmantojot braucēju kodus. Noderīgi, ja spēlētāji aizpilda to bezsaistē programmā Excel vai Sheets. Tad esošās prognozes attiecīgajam posmam, var tikt pārrakstītas.</p>
       <div class="filerow">
         <input type="file" id="predCsvFile" accept=".csv">
@@ -783,12 +864,316 @@ const SUPABASE_URL =
 
 const SUPABASE_KEY =
   'sb_publishable_R9tJ7P8U3SI1_pBSjHOwKg_yRcUbHU6';
+const passwordLinkType =
+  new URLSearchParams(window.location.hash.slice(1)).get('type') ||
+  new URLSearchParams(window.location.search).get('type');
+
+let passwordSetupFromLink =
+  passwordLinkType === 'invite' ||
+  passwordLinkType === 'recovery';
 
 const supabaseClient = supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
+/* ---------------- PLAYER AUTH ---------------- */
 
+// Spēlētāja ielogošanās
+async function loginPlayer(email, password) {
+  const { data, error } =
+    await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+  if (error) throw error;
+
+  return data.user;
+}
+
+// Jauna spēlētāja reģistrācija
+async function registerPlayer(email, password, username) {
+  const { data, error } =
+    await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: { data: { username } }
+    });
+
+  if (error) throw error;
+
+  return data;
+}
+
+document.getElementById('setPlayerPasswordBtn')
+  .addEventListener('click', async () => {
+    const password =
+      document.getElementById('newPlayerPassword').value;
+
+    const confirm =
+      document.getElementById('confirmPlayerPassword').value;
+
+    const msg = document.getElementById('setPlayerPasswordMsg');
+
+    if (password.length < 8) {
+      msg.textContent = 'Parolei jābūt vismaz 8 simbolus garai.';
+      return;
+    }
+
+    if (password !== confirm) {
+      msg.textContent = 'Paroles nesakrīt.';
+      return;
+    }
+
+    const { data: userData, error: userError } =
+      await supabaseClient.auth.getUser();
+
+    if (userError || !userData.user) {
+      msg.textContent = 'Vispirms atver derīgu uzaicinājuma saiti.';
+      return;
+    }
+
+    const { error } = await supabaseClient.auth.updateUser({
+      password
+    });
+
+    if (error) {
+      msg.textContent = 'Kļūda: ' + error.message;
+      return;
+    }
+
+    msg.textContent = 'Parole veiksmīgi saglabāta!';
+    passwordSetupFromLink = false;
+    document.getElementById('setPasswordCard').hidden = true;
+    document.getElementById('newPlayerPassword').value = '';
+    document.getElementById('confirmPlayerPassword').value = '';
+
+    // Noņem autentifikācijas parametrus no adreses
+    window.history.replaceState(
+      null, '',
+      window.location.pathname + window.location.search
+    );
+  });
+
+/* ---------------- PLAYER AUTH UI ---------------- */
+
+const F1_ADMIN_UID = 'f1443ed2-2aa0-4d00-8308-b12619628571';
+let currentPlayer = null;
+let currentPlayerProfile = null;
+let authRenderNonce = 0;
+
+async function updatePlayerAuthUI(user) {
+  const nonce = ++authRenderNonce;
+  const loginCard = document.getElementById('playerLoginCard');
+  const profileCard = document.getElementById('playerProfileCard');
+  const displayName = document.getElementById('playerDisplayName');
+  const nameInput = document.getElementById('userName');
+  const protectedContent = document.getElementById('predictionsProtected');
+
+  currentPlayer = user || null;
+  currentPlayerProfile = null;
+  protectedContent.hidden = true;
+  loginCard.hidden = !!user;
+  profileCard.hidden = !user;
+  nameInput.value = '';
+  nameInput.readOnly = true;
+
+  if (!user) {
+    displayName.textContent = '';
+    adminUnlocked = false;
+    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('adminGate').style.display = 'block';
+    return;
+  }
+
+  displayName.textContent = 'Ielādē profilu...';
+  let { data: profile, error } = await supabaseClient
+    .from('f1_profiles')
+    .select('id, username, avatar, team')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (nonce !== authRenderNonce) return;
+
+  // Pirmo reizi reģistrēts lietotājs: profilu izveido no reģistrācijas vārda.
+  const username = String(user.user_metadata?.username || '').trim();
+  if (!error && !profile && username.length >= 2 && username.length <= 24) {
+    const created = await supabaseClient
+      .from('f1_profiles')
+      .insert({ id: user.id, username })
+      .select('id, username, avatar, team')
+      .single();
+    if (nonce !== authRenderNonce) return;
+    profile = created.data;
+    error = created.error;
+  }
+
+  if (error || !profile) {
+    console.error('F1 profila kļūda:', error);
+    displayName.textContent = error
+      ? 'Neizdevās izveidot/ielādēt profilu: ' + error.message
+      : 'Profils nav izveidots — sazinies ar spēles administratoru.';
+    return;
+  }
+
+  currentPlayerProfile = profile;
+  displayName.textContent = profile.username;
+  nameInput.value = profile.username; // tikai saderībai ar veco UI
+  protectedContent.hidden = false;
+  if (selectedRaceRound) await selectRace(selectedRaceRound);
+}
+
+async function getOwnPrediction(round) {
+  if (!currentPlayer || !currentPlayerProfile) return null;
+  const { data, error } = await supabaseClient
+    .from('f1_predictions')
+    .select('race, pole, fastest_lap, created_at, updated_at')
+    .eq('user_id', currentPlayer.id)
+    .eq('round', round)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function saveOwnPrediction(round, prediction) {
+  if (!currentPlayer || !currentPlayerProfile)
+    throw new Error('Vispirms ielogojies savā spēlētāja kontā.');
+  const { error } = await supabaseClient
+    .from('f1_predictions')
+    .upsert({
+      user_id: currentPlayer.id,
+      round,
+      race: prediction.race,
+      pole: prediction.pole,
+      fastest_lap: prediction.fastest_lap,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,round' });
+  if (error) throw error;
+}
+
+async function loadPredictionsForRound(round) {
+  const { data, error } = await supabaseClient
+    .from('f1_predictions')
+    .select('user_id, round, race, pole, fastest_lap')
+    .eq('round', round);
+  if (error) throw error;
+  const rows = data || [];
+  if (!rows.length) return [];
+  const ids = [...new Set(rows.map(r => r.user_id))];
+  const profilesResponse = await supabaseClient
+    .from('f1_profiles')
+    .select('id, username')
+    .in('id', ids);
+  if (profilesResponse.error) throw profilesResponse.error;
+  const profileNames = new Map(
+    (profilesResponse.data || []).map(p => [p.id, p.username])
+  );
+  return rows.map(p => ({
+    user_id: p.user_id,
+    round: p.round,
+    name: profileNames.get(p.user_id) || 'Nezināms spēlētājs',
+    race: p.race || [],
+    pole: p.pole || '',
+    fastestLap: p.fastest_lap || ''
+  }));
+}
+
+// Ielogoties
+document.getElementById('playerLoginBtn')
+  .addEventListener('click', async () => {
+
+    const email = document.getElementById('playerEmail').value.trim();
+    const password = document.getElementById('playerPassword').value;
+    const msg = document.getElementById('playerAuthMsg');
+
+    if (!email || !password) {
+      msg.textContent = 'Ievadi e-pastu un paroli.';
+      return;
+    }
+
+    try {
+      await loginPlayer(email, password);
+      msg.textContent = '';
+    } catch (error) {
+      msg.textContent = 'Ielogošanās kļūda: ' + error.message;
+    }
+  });
+
+// Reģistrēties
+document.getElementById('playerRegisterBtn')
+  .addEventListener('click', async () => {
+
+    const email = document.getElementById('playerEmail').value.trim();
+    const password = document.getElementById('playerPassword').value;
+    const username = document.getElementById('playerRegisterName').value.trim();
+    const msg = document.getElementById('playerAuthMsg');
+
+    if (username.length < 2 || username.length > 24) {
+      msg.textContent = 'Reģistrācijai ievadi spēlētāja vārdu (2–24 simboli).';
+      return;
+    }
+    if (!email || password.length < 8) {
+      msg.textContent =
+        'Ievadi e-pastu un paroli ar vismaz 8 simboliem.';
+      return;
+    }
+
+    try {
+      const data = await registerPlayer(email, password, username);
+
+      msg.textContent = data.session
+        ? 'Konts veiksmīgi izveidots!'
+        : 'Pārbaudi e-pastu un apstiprini reģistrāciju.';
+    } catch (error) {
+      msg.textContent = 'Reģistrācijas kļūda: ' + error.message;
+    }
+  });
+
+// Izlogoties
+document.getElementById('playerLogoutBtn')
+  .addEventListener('click', async () => {
+
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) {
+      alert('Izlogošanās kļūda: ' + error.message);
+    }
+  });
+
+// Automātiski atjauno ekrānu pēc pieslēgšanās/izlogošanās
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  setTimeout(() => {
+    updatePlayerAuthUI(session?.user || null);
+
+    const showPasswordForm =
+      !!session?.user &&
+      (passwordSetupFromLink || event === 'PASSWORD_RECOVERY');
+
+    if (showPasswordForm) {
+      document.getElementById('setPasswordCard').hidden = false;
+    } else {
+      document.getElementById('setPasswordCard').hidden = true;
+    }
+
+    if (!session?.user) {
+      document.getElementById('setPasswordCard').hidden = true;
+    }
+  }, 0);
+});
+
+
+// Pārbauda iepriekš saglabāto sesiju
+supabaseClient.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error('Sesijas pārbaudes kļūda:', error);
+    return;
+  }
+
+  updatePlayerAuthUI(data.session?.user || null);
+  if (data.session?.user && passwordSetupFromLink) {
+    document.getElementById('setPasswordCard').hidden = false;
+  }
+});
 
 /* ---------------- storage helpers ---------------- */
 
@@ -1112,12 +1497,13 @@ function escapeHTML(value) {
 async function renderPlayerPredictionStrip(round, result) {
   const card = document.getElementById('playerPredictionsCard');
   const strip = document.getElementById('playerPredictionStrip');
-  const keys = await listKeys('prediction:' + round + ':');
-  const players = [];
-
-  for (const key of keys) {
-    const prediction = await getJSON(key);
-    if (prediction && prediction.name) players.push(prediction);
+  let players;
+  try {
+    players = await loadPredictionsForRound(round);
+  } catch (e) {
+    console.error('Neizdevās ielādēt konkurentu prognozes:', e);
+    card.style.display = 'none';
+    return;
   }
 
   // Ja pa šo laiku izvēlēts cits posms, neattēlojam iepriekšējā rezultātus.
@@ -1166,6 +1552,10 @@ async function renderPlayerPredictionStrip(round, result) {
 
 async function selectRace(round) {
   selectedRaceRound = round;
+  if (!currentPlayer || !currentPlayerProfile) {
+    document.getElementById('predictForm').style.display = 'none';
+    return;
+  }
   await renderRaceStrip();
   if (selectedRaceRound !== round) return;
   const race = CALENDAR.find(r => r.round === round);
@@ -1205,15 +1595,18 @@ async function selectRace(round) {
 
   statusMsg.style.display = 'none';
   form.style.display = 'block';
-  const name = document.getElementById('userName').value.trim();
   ['r1','r2','r3','r4','r5','r6','r7','r8','r9','r10','pole','fastestLap'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.querySelectorAll('#predictForm select').forEach(updateDriverSelectColor);
   document.getElementById('predictMsg').innerHTML = '';
-  if (!name) return;
-
-  const existing = await getJSON('prediction:' + round + ':' + name.toLowerCase());
+  let existing;
+  try { existing = await getOwnPrediction(round); }
+  catch (e) {
+    console.error('Prognozes ielādes kļūda:', e);
+    document.getElementById('predictMsg').textContent = 'Neizdevās ielādēt prognozi: ' + e.message;
+    return;
+  }
   if (selectedRaceRound !== round) return;
   if (existing) {
     const savedRace = Array.isArray(existing.race) ? existing.race : [];
@@ -1221,7 +1614,7 @@ async function selectRace(round) {
       document.getElementById(id).value = savedRace[i] || '';
     });
     document.getElementById('pole').value = existing.pole || '';
-    document.getElementById('fastestLap').value = existing.fastestLap || '';
+    document.getElementById('fastestLap').value = existing.fastest_lap || '';
     document.querySelectorAll('#predictForm select').forEach(updateDriverSelectColor);
     document.getElementById('predictMsg').innerHTML =
       '<div class="msg info">Iepriekšējā prognoze ielādēta. Vari to papildināt vai labot.</div>';
@@ -1231,10 +1624,9 @@ async function selectRace(round) {
 // Saglabā pilnu TOP 10 + Pole + FL prognozi.
 document.getElementById('submitPredictionBtn').addEventListener('click', async () => {
   const msg = document.getElementById('predictMsg');
-  const name = document.getElementById('userName').value.trim();
   const round = selectedRaceRound;
-  if (!name || !round) {
-    msg.innerHTML = '<div class="msg err">Vispirms ievadi savu vārdu un izvēlies posmu.</div>';
+  if (!currentPlayerProfile || !round) {
+    msg.innerHTML = '<div class="msg err">Vispirms ielogojies un izvēlies posmu.</div>';
     return;
   }
   if (await getJSON('result:' + round) || await getJSON('cancelled:' + round)) {
@@ -1244,74 +1636,50 @@ document.getElementById('submitPredictionBtn').addEventListener('click', async (
   const race = ['r1','r2','r3','r4','r5','r6','r7','r8','r9','r10']
     .map(id => document.getElementById(id).value);
   const fastestLap = document.getElementById('fastestLap').value;
-  const key = 'prediction:' + round + ':' + name.toLowerCase();
-  const existing = await getJSON(key);
-  const pole = document.getElementById('pole').value || (existing && existing.pole) || '';
-
-  if (race.some(v => !v)) {
-    msg.innerHTML = '<div class="msg err">Aizpildi visas TOP 10 pozīcijas.</div>';
+  if (race.some(v => !v) || new Set(race).size !== 10) {
+    msg.innerHTML = '<div class="msg err">Izvēlies desmit dažādus TOP 10 braucējus.</div>';
     return;
   }
-  if (new Set(race).size !== 10) {
-    msg.innerHTML = '<div class="msg err">TOP 10 jābūt desmit dažādiem braucējiem.</div>';
-    return;
+  try {
+    const existing = await getOwnPrediction(round);
+    const pole = document.getElementById('pole').value || existing?.pole || '';
+    if (!pole || !fastestLap) {
+      msg.innerHTML = '<div class="msg err">Izvēlies Pole un ātrākā apļa braucēju.</div>';
+      return;
+    }
+    await saveOwnPrediction(round, { race, pole, fastest_lap: fastestLap });
+    msg.innerHTML = '<div class="msg ok">Pilnā prognoze saglabāta tavā kontā.</div>';
+  } catch (e) {
+    console.error('Prognozes saglabāšanas kļūda:', e);
+    msg.textContent = 'Neizdevās saglabāt prognozi: ' + e.message;
   }
-  if (!pole || !fastestLap) {
-    msg.innerHTML = '<div class="msg err">Izvēlies Pole Position un ātrākā apļa braucēju.</div>';
-    return;
-  }
-
-  const raceInfo = CALENDAR.find(r => r.round === round);
-  const payload = {
-    ...(existing || {}), round, raceName: raceInfo.name, name, race, pole, fastestLap,
-    submittedAt: new Date().toISOString(),
-    poleSubmittedAt: existing && existing.pole === pole
-      ? existing.poleSubmittedAt || existing.submittedAt
-      : new Date().toISOString()
-  };
-  const ok = await setJSON(key, payload);
-  msg.innerHTML = ok
-    ? '<div class="msg ok">Pilnā prognoze saglabāta.</div>'
-    : '<div class="msg err">Prognozi neizdevās saglabāt.</div>';
 });
 
 // Tikai Pole Position: saglabājot netiek dzēsta agrāk iesniegtā TOP 10/FL prognoze.
 document.getElementById('savePoleOnlyBtn').addEventListener('click', async () => {
   const msg = document.getElementById('predictMsg');
-  const name = document.getElementById('userName').value.trim();
   const round = selectedRaceRound;
   const pole = document.getElementById('pole').value;
-  if (!name || !round || !pole) {
-    msg.innerHTML = '<div class="msg err">Ievadi vārdu, izvēlies posmu un Pole Position braucēju.</div>';
+  if (!currentPlayerProfile || !round || !pole) {
+    msg.innerHTML = '<div class="msg err">Ielogojies, izvēlies posmu un Pole braucēju.</div>';
     return;
   }
   if (await getJSON('result:' + round) || await getJSON('cancelled:' + round)) {
     msg.innerHTML = '<div class="msg err">Šim posmam prognozes ir slēgtas.</div>';
     return;
   }
-
-  const key = 'prediction:' + round + ':' + name.toLowerCase();
-  const existing = await getJSON(key);
-  const raceInfo = CALENDAR.find(r => r.round === round);
-  const now = new Date().toISOString();
-  const payload = {
-    ...(existing || {}),
-    round, raceName: raceInfo.name, name,
-    race: Array.isArray(existing?.race) ? existing.race : [],
-    fastestLap: existing?.fastestLap || '',
-    pole,
-    submittedAt: existing?.submittedAt || now,
-    poleSubmittedAt: existing?.pole === pole ? (existing.poleSubmittedAt || now) : now
-  };
-
-  const ok = await setJSON(key, payload);
-  msg.innerHTML = ok
-    ? '<div class="msg ok">Pole Position prognoze saglabāta. TOP 10 vari aizpildīt vēlāk.</div>'
-    : '<div class="msg err">Pole Position prognozi neizdevās saglabāt.</div>';
-});
-
-document.getElementById('userName').addEventListener('change', () => {
-  if (selectedRaceRound) selectRace(selectedRaceRound);
+  try {
+    const existing = await getOwnPrediction(round);
+    await saveOwnPrediction(round, {
+      race: Array.isArray(existing?.race) ? existing.race : [],
+      pole,
+      fastest_lap: existing?.fastest_lap || ''
+    });
+    msg.innerHTML = '<div class="msg ok">Pole saglabāta. TOP 10 vari pabeigt vēlāk.</div>';
+  } catch (e) {
+    console.error('Pole saglabāšanas kļūda:', e);
+    msg.textContent = 'Neizdevās saglabāt Pole: ' + e.message;
+  }
 });
 
 /* ---------------- scoring ---------------- */
@@ -1400,14 +1768,21 @@ function renderPredictionBreakdown(prediction, result, multiplier = 1) {
 }
 
 async function scoreRound(round, result) {
-  // Atcelta posma punktus neuzkrājam.
   if (await getJSON('cancelled:' + round)) return { scored: 0, failed: 0 };
+  const { data: authInfo, error: authErr } = await supabaseClient.auth.getUser();
+  if (authErr || authInfo.user?.id !== F1_ADMIN_UID) {
+    return { scored: 0, failed: 1 }; // Punktu ierakstus maina tikai admins
+  }
   const multiplier = await getRoundMultiplier(round);
-  const keys = await listKeys('prediction:' + round + ':');
+  let players;
+  try { players = await loadPredictionsForRound(round); }
+  catch (e) {
+    console.error('Punktu vērtēšanas ielādes kļūda:', e);
+    return { scored: 0, failed: 1 };
+  }
   let scored = 0, failed = 0;
-  for (const key of keys) {
-    const pred = await getJSON(key);
-    if (!pred || !pred.name) continue;
+  for (const pred of players) {
+    if (!pred.name || pred.name === 'Nezināms spēlētājs') { failed++; continue; }
     const rp = scoreRace(Array.isArray(pred.race) ? pred.race : [], result.race);
     const bp = scoreBonus(pred.pole, pred.fastestLap, result.pole, result.fastestLap);
     const ok = await setJSON('score:' + round + ':' + pred.name.toLowerCase(), {
@@ -1890,7 +2265,7 @@ document.getElementById('adminUnlockBtn').addEventListener('click', async () => 
     return;
   }
 
-  if (data.user) {
+  if (data.user?.id === F1_ADMIN_UID) {
 
     adminUnlocked = true;
 
@@ -1905,32 +2280,45 @@ document.getElementById('adminUnlockBtn').addEventListener('click', async () => 
 
 });
 
-async function populateManagePlayerSelect(){
+async function populateManagePlayerSelect() {
   const sel = document.getElementById('managePlayerSelect');
-  const keys = await listKeys('prediction:');
-  const names = new Map(); // lowercase -> display name
-  for(const k of keys){
-    const pred = await getJSON(k);
-    if(pred && pred.name) names.set(pred.name.toLowerCase(), pred.name);
+  const { data, error } = await supabaseClient
+    .from('f1_profiles').select('id, username').order('username');
+  if (error) {
+    sel.innerHTML = '<option value="">Neizdevās ielādēt spēlētājus</option>';
+    console.error('Spēlētāju saraksts:', error);
+    return;
   }
-  const sorted = [...names.values()].sort((a,b)=>a.localeCompare(b));
-  sel.innerHTML = sorted.length
-    ? sorted.map(n=>`<option value="${escapeHTML(n)}">${escapeHTML(n)}</option>`).join('')
+  sel.innerHTML = (data || []).length
+    ? data.map(p => `<option value="${p.id}">${escapeHTML(p.username)}</option>`).join('')
     : '<option value="">Vēl nav spēlētāju</option>';
 }
 
-document.getElementById('deletePlayerBtn').addEventListener('click', async ()=>{
+document.getElementById('deletePlayerBtn').addEventListener('click', async () => {
   const msg = document.getElementById('managePlayerMsg');
-  const name = document.getElementById('managePlayerSelect').value;
-  if(!name){ msg.innerHTML = '<div class="msg err">Vispirms izvēlies spēlētāju.</div>'; return; }
-  if(!confirm(`Dzēst visas prognozes un rezultātus priekš"${name}"? To nav iespējams atsaukt.`)) return;
+  if (!adminUnlocked) {
+    msg.textContent = 'Nepieciešama administratora ielogošanās.';
+    return;
+  }
+  const userId = document.getElementById('managePlayerSelect').value;
+  if (!userId) return;
+  const { data: profile, error } = await supabaseClient
+    .from('f1_profiles').select('username').eq('id', userId).maybeSingle();
+  if (error || !profile) { msg.textContent = 'Profils nav atrasts.'; return; }
+  const name = profile.username;
+  if (!confirm(`Dzēst visas ${name} prognozes un rezultātu punktus? Šo nevar atsaukt.`)) return;
+  const deletion = await supabaseClient
+    .from('f1_predictions').delete().eq('user_id', userId);
+  if (deletion.error) {
+    msg.textContent = 'Neizdevās dzēst prognozes: ' + deletion.error.message;
+    return;
+  }
   const lower = name.toLowerCase();
-  const predKeys = (await listKeys('prediction:')).filter(k=>k.endsWith(':'+lower));
-  const scoreKeys = (await listKeys('score:')).filter(k=>k.endsWith(':'+lower));
-  let deleted = 0;
-  for(const k of [...predKeys, ...scoreKeys]){ if(await deleteKey(k)) deleted++; }
-  msg.innerHTML = `<div class="msg ok">Izdzēsts ${name} (${deleted} ieraksts/i noņemts/i).</div>`;
-  await populateManagePlayerSelect();
+  const scoreKeys = (await listKeys('score:')).filter(k => k.endsWith(':' + lower));
+  const legacyKeys = (await listKeys('prediction:')).filter(k => k.endsWith(':' + lower));
+  for (const key of [...scoreKeys, ...legacyKeys]) await deleteKey(key);
+  msg.textContent = `${name}: dzēstas prognozes un kopvērtējuma punkti. Auth profils paliek aktīvs.`;
+  await renderLeaderboard();
 });
 
 async function renderAdminRaceStrip(){
@@ -2256,17 +2644,28 @@ document.getElementById('dlPredTemplate').addEventListener('click', ()=>{
   ]);
 });
 
-document.getElementById('dlPredictions').addEventListener('click', async ()=>{
-  const keys = await listKeys('prediction:');
+document.getElementById('dlPredictions').addEventListener('click', async () => {
+  if (!adminUnlocked) {
+    alert('Visu prognožu eksportam ielogojies Admin sadaļā.');
+    return;
+  }
+  const { data, error } = await supabaseClient.from('f1_predictions')
+    .select('user_id, round, race, pole, fastest_lap, updated_at');
+  if (error) { alert('Eksporta kļūda: ' + error.message); return; }
+  const { data: profiles, error: profileErr } = await supabaseClient
+    .from('f1_profiles').select('id, username');
+  if (profileErr) { alert('Profilu kļūda: ' + profileErr.message); return; }
+  const nameMap = new Map((profiles || []).map(p => [p.id, p.username]));
   const rows = [['round','raceName','name','r1','r2','r3','r4','r5','r6','r7','r8','r9','r10','pole','fastestlap','submittedAt']];
-  for(const k of keys){
-    const p = await getJSON(k);
-    if(!p) continue;
-    const race = Array.from({length:10}, (_, i) => Array.isArray(p.race) ? (p.race[i] || '') : '');
-    rows.push([p.round,p.raceName,p.name,...race,p.pole||'',p.fastestLap||'',p.submittedAt]);
+  for (const p of data || []) {
+    const race = Array.from({length:10}, (_,i) => p.race?.[i] || '');
+    const raceName = CALENDAR.find(r => r.round === p.round)?.name || '';
+    rows.push([p.round, raceName, nameMap.get(p.user_id) || '', ...race,
+      p.pole || '', p.fastest_lap || '', p.updated_at || '']);
   }
   downloadCSV('f1-2026-predictions.csv', rows);
 });
+
 document.getElementById('dlResults').addEventListener('click', async ()=>{
   const keys = await listKeys('result:');
   const rows = [['round','raceName','r1','r2','r3','r4','r5','r6','r7','r8','r9','r10','pole','fastestlap','enteredAt']];
@@ -2293,43 +2692,62 @@ document.getElementById('dlLeaderboard').addEventListener('click', async ()=>{
   downloadCSV('f1-2026-leaderboard.csv', rows);
 });
 
-document.getElementById('predCsvBtn').addEventListener('click', async ()=>{
+document.getElementById('predCsvBtn').addEventListener('click', async () => {
   const msg = document.getElementById('predCsvMsg');
-  const file = document.getElementById('predCsvFile').files[0];
-  if(!file){ msg.innerHTML = '<div class="msg err">Choose a CSV file first.</div>'; return; }
-  const text = await file.text();
-  const rows = parseCSV(text);
-  if(rows.length<2){ msg.innerHTML = '<div class="msg err">CSV looks empty.</div>'; return; }
-  const header = rows[0].map(h=>h.replace(/^\uFEFF/,'').trim().toLowerCase());
-  let count=0, errors=0;
-  for(let i=1;i<rows.length;i++){
-    const cols = rows[i];
-    const obj = {}; header.forEach((h,idx)=>obj[h]=(cols[idx]||'').trim().toUpperCase());
-    const round = parseInt(obj.round,10);
-    const name = (cols[header.indexOf('name')]||'').trim();
-    const race = [obj.r1,obj.r2,obj.r3,obj.r4,obj.r5,obj.r6,obj.r7,obj.r8,obj.r9,obj.r10];
-    const pole = obj.pole || '';
-    const fastestLap = obj.fastestlap || '';
-    const badPole = pole && !DRIVER_MAP[pole];
-    const badFL = fastestLap && !DRIVER_MAP[fastestLap];
-    const hasRace = race.some(Boolean);
-    const validRace = !hasRace || (race.every(v=>DRIVER_MAP[v]) && new Set(race).size === 10);
-    if(!CALENDAR.some(r=>r.round===round) || !name || badPole || badFL || !validRace || (!pole && !hasRace)) { errors++; continue; }
-    const raceInfo = CALENDAR.find(r=>r.round===round);
-    const key = 'prediction:'+round+':'+name.toLowerCase();
-    const existing = await getJSON(key);
-    const now = new Date().toISOString();
-    const newPole = pole || existing?.pole || '';
-    const ok = await setJSON(key, {
-      ...(existing || {}), round, raceName: raceInfo.name, name,
-      race: hasRace ? race : (existing?.race || []),
-      pole: newPole, fastestLap: fastestLap || existing?.fastestLap || '',
-      submittedAt: now,
-      poleSubmittedAt: newPole !== existing?.pole ? now : (existing?.poleSubmittedAt || now)
-    });
-    if(ok) count++; else errors++;
+  if (!adminUnlocked) {
+    msg.textContent = 'Prognožu CSV importam vispirms ielogojies Admin sadaļā.';
+    return;
   }
-  msg.innerHTML = `<div class="msg ${errors?'err':'ok'}">Imported ${count} prediction row(s)${errors?`, ${errors} row(s) skipped (bad round/driver code)`:''}.</div>`;
+  const file = document.getElementById('predCsvFile').files[0];
+  if (!file) { msg.textContent = 'Izvēlies CSV failu.'; return; }
+  const rows = parseCSV(await file.text());
+  if (rows.length < 2) { msg.textContent = 'CSV ir tukšs.'; return; }
+  const header = rows[0].map(h => h.replace(/^\uFEFF/, '').trim().toLowerCase());
+  const { data: profiles, error: profileErr } = await supabaseClient
+    .from('f1_profiles').select('id, username');
+  if (profileErr) { msg.textContent = profileErr.message; return; }
+  const profileMap = new Map((profiles || []).map(p => [p.username.toLowerCase(), p]));
+  let count = 0, errors = 0;
+  const changedRounds = new Set();
+  for (let i = 1; i < rows.length; i++) {
+    const cols = rows[i];
+    const obj = {};
+    header.forEach((h, index) => obj[h] = (cols[index] || '').trim());
+    const round = Number(obj.round);
+    const name = (obj.name || '').toLowerCase();
+    const profile = profileMap.get(name);
+    const race = Array.from({length:10},(_,i) => String(obj['r'+(i+1)] || '').toUpperCase());
+    const pole = String(obj.pole || '').toUpperCase();
+    const fastestLap = String(obj.fastestlap || '').toUpperCase();
+    const hasRace = race.some(Boolean);
+    const validRace = !hasRace || (race.every(v => DRIVER_MAP[v]) && new Set(race).size === 10);
+    if (!profile || !CALENDAR.some(r => r.round === round) || !validRace ||
+        (pole && !DRIVER_MAP[pole]) || (fastestLap && !DRIVER_MAP[fastestLap]) ||
+        (!pole && !hasRace)) { errors++; continue; }
+    const { data: existing, error: existingError } = await supabaseClient
+      .from('f1_predictions').select('race,pole,fastest_lap')
+      .eq('user_id', profile.id).eq('round', round).maybeSingle();
+    if (existingError) { errors++; continue; }
+    const { error } = await supabaseClient.from('f1_predictions').upsert({
+      user_id: profile.id, round,
+      race: hasRace ? race : (existing?.race || []),
+      pole: pole || existing?.pole || '',
+      fastest_lap: fastestLap || existing?.fastest_lap || '',
+      updated_at: new Date().toISOString()
+    }, {onConflict:'user_id,round'});
+    if (error) { console.error('CSV import:', error); errors++; }
+    else { count++; changedRounds.add(round); }
+  }
+  let rescoreErrors = 0;
+  for (const r of changedRounds) {
+    const actual = await getJSON('result:' + r);
+    if (actual) {
+      const outcome = await scoreRound(r, actual);
+      rescoreErrors += outcome.failed;
+    }
+  }
+  msg.textContent = `Importētas ${count} prognozes; kļūdas: ${errors}.` +
+    (rescoreErrors ? ` ${rescoreErrors} punktu pārrēķinu kļūdas.` : '');
 });
 
 document.getElementById('adminCsvBtn').addEventListener('click', async ()=>{
