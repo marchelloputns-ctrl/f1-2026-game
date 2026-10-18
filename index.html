@@ -538,6 +538,9 @@ input[type=file] {
     <button class="btn secondary" id="playerRegisterBtn">
       Reģistrēties
     </button>
+    <button class="btn secondary" id="playerResetPasswordBtn" type="button">
+      Aizmirsu paroli / Iestatīt paroli
+    </button>
   </div>
 
   <div id="playerAuthMsg"></div>
@@ -872,10 +875,21 @@ let passwordSetupFromLink =
   passwordLinkType === 'invite' ||
   passwordLinkType === 'recovery';
 
+// Parāda lietotājam kļūdu, ja e-pasta saite ir nederīga vai beigusies.
+const authLinkParams = new URLSearchParams(window.location.hash.slice(1));
+const authLinkQuery = new URLSearchParams(window.location.search);
+const authLinkError = authLinkParams.get('error_code') || authLinkQuery.get('error_code');
+
 const supabaseClient = supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
+
+if (authLinkError) {
+  document.getElementById('playerAuthMsg').textContent =
+    'Uzaicinājuma vai paroles saite vairs nav derīga (' + authLinkError + '). ' +
+    'Ievadi savu e-pastu un spied „Aizmirsu paroli / Iestatīt paroli”.';
+}
 /* ---------------- PLAYER AUTH ---------------- */
 
 // Spēlētāja ielogošanās
@@ -1129,6 +1143,35 @@ document.getElementById('playerRegisterBtn')
     }
   });
 
+// Atjaunošanas e-pasts ESOŠAM kontam (neizveido otru lietotāju).
+document.getElementById('playerResetPasswordBtn')
+  .addEventListener('click', async () => {
+    const email = document.getElementById('playerEmail').value.trim();
+    const msg = document.getElementById('playerAuthMsg');
+    const button = document.getElementById('playerResetPasswordBtn');
+
+    if (!email || !document.getElementById('playerEmail').checkValidity()) {
+      msg.textContent = 'Vispirms ievadi derīgu e-pasta adresi.';
+      return;
+    }
+
+    button.disabled = true;
+    msg.textContent = 'Nosūtu paroles iestatīšanas saiti...';
+    try {
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname
+      });
+      if (error) throw error;
+      msg.textContent =
+        'Ja šim e-pastam ir konts, nosūtīta paroles iestatīšanas saite. ' +
+        'Pārbaudi arī Spam mapi; atver tieši jaunāko saiti.';
+    } catch (error) {
+      msg.textContent = 'Neizdevās nosūtīt e-pastu: ' + error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
 // Izlogoties
 document.getElementById('playerLogoutBtn')
   .addEventListener('click', async () => {
@@ -1142,21 +1185,18 @@ document.getElementById('playerLogoutBtn')
 
 // Automātiski atjauno ekrānu pēc pieslēgšanās/izlogošanās
 supabaseClient.auth.onAuthStateChange((event, session) => {
+  // Recovery links produce a special event; preserve it across INITIAL_SESSION
+  // and other events so that the form isn't immediately hidden again.
+  if (event === 'PASSWORD_RECOVERY') passwordSetupFromLink = true;
+
   setTimeout(() => {
     updatePlayerAuthUI(session?.user || null);
-
-    const showPasswordForm =
-      !!session?.user &&
-      (passwordSetupFromLink || event === 'PASSWORD_RECOVERY');
-
-    if (showPasswordForm) {
-      document.getElementById('setPasswordCard').hidden = false;
-    } else {
-      document.getElementById('setPasswordCard').hidden = true;
-    }
-
-    if (!session?.user) {
-      document.getElementById('setPasswordCard').hidden = true;
+    const card = document.getElementById('setPasswordCard');
+    const showPasswordForm = !!session?.user && passwordSetupFromLink;
+    const wasHidden = card.hidden;
+    card.hidden = !showPasswordForm;
+    if (showPasswordForm && wasHidden) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, 0);
 });
