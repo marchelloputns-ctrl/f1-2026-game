@@ -311,6 +311,9 @@ input[type=file] {
   .msg.ok{background:#0d2b1d; color:#7ee2ab; border:1px solid #16543a;}
   .msg.err{background:#2b0d0d; color:#ff9a94; border:1px solid #542020;}
   .msg.info{background:#141c2b; color:#8fb4ff; border:1px solid #24365a;}
+  /* Admin dzēšanas paziņojumi izmanto tās pašas .msg krāsas kā pārējā spēlē */
+  #managePlayerMsg:empty { display:none; }
+  #managePlayerMsg.msg { margin-top:12px; }
 
   table{width:100%; border-collapse:collapse; font-size:13.5px;}
   th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
@@ -371,25 +374,72 @@ input[type=file] {
   font-weight: 900;
   text-align: right;
 }
-  /* Spēlētāju horizontālā izvēlne pabeigtajiem posmiem */
+  /* Spēlētāju izvēles: avatars un lietotājvārds vienā līmenī */
   .player-chip {
-    flex: 0 0 auto;
-    min-width: 120px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    flex: 0 0 162px;
+    width: 162px;
+    min-height: 64px;
     border: 1px solid var(--line);
     border-radius: 6px;
     background: var(--asphalt-2);
     color: var(--text);
-    padding: 10px 14px;
+    padding: 10px 12px;
     font-family: var(--font-body);
     font-size: 13px;
     font-weight: 600;
+    text-align: left;
     cursor: pointer;
   }
+  .player-chip .f1-avatar.tiny {
+    width: 34px;
+    height: 34px;
+    margin: 0;
+  }
+  .player-chip-name {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .player-chip:hover { border-color: var(--amber); }
+  .player-chip:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
   .player-chip.selected {
     background: #352a12;
     border-color: var(--amber);
   }
+  /* Pabeigta posma labākās prognozes informācija */
+  .result-best-prediction {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-top: 14px;
+    padding: 10px 13px;
+    background: var(--asphalt-2);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--amber);
+    border-radius: 5px;
+    font-size: 13px;
+  }
+  .result-best-label { color: var(--muted); }
+  .result-best-player {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .result-best-avatar-slot { display: inline-flex; align-items: center; flex-shrink: 0; }
+  .result-best-points { margin-left: auto; color: white; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
   #toggleDoublePointsBtn {
   margin-top: 14px;
   background: #25292e;
@@ -487,71 +537,55 @@ input[type=file] {
 [hidden] {
   display: none !important;
 }
-/* Spēlētāju avatari */
-.f1-profile-heading { display:flex; align-items:center; gap:14px; margin:4px 0 12px; }
+/* Vienkāršs profils: rediģējams foto/iniciālis un sezonas punkti */
+.f1-profile-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(245px,360px); gap:24px; align-items:start; }
+.f1-profile-identity h3 { margin-bottom:14px; }
+.f1-profile-heading { display:flex; align-items:center; gap:16px; margin:0 0 14px; }
+.f1-profile-heading strong { font-family:var(--font-head3); font-size:18px; }
 .f1-avatar { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
-  width:46px; height:46px; border-radius:50%; overflow:hidden; border:2px solid rgba(255,255,255,.23);
-  color:#fff; font-size:25px; line-height:1; font-weight:800; font-family:var(--font-head3); }
+  width:46px; height:46px; border-radius:50%; overflow:hidden; border:2px solid rgba(255,255,255,.25);
+  background:#e10600; color:#fff; font-size:25px; line-height:1; font-weight:800; font-family:var(--font-head3); }
 .f1-avatar img { display:block; width:100%; height:100%; object-fit:cover; }
-.f1-avatar.big { width:76px; height:76px; font-size:40px; border-width:3px; }
-.f1-avatar.tiny { width:30px; height:30px; font-size:17px; border-width:1px; }
+.f1-avatar.big { width:76px; height:76px; font-size:34px; border-width:3px; }
+.f1-avatar.tiny { width:30px; height:30px; font-size:15px; border-width:1px; }
+.f1-avatar.preview { width:142px; height:142px; font-size:62px; border-width:3px; }
 .f1-player-name { display:inline-flex; align-items:center; gap:10px; }
-.avatar-editor { border-top:1px solid var(--line); margin-top:15px; padding-top:16px; }
-.avatar-picker { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 12px; }
-.avatar-option { width:44px; height:44px; display:flex; align-items:center; justify-content:center;
-  font-size:24px; color:white; background:var(--asphalt-2); border:1px solid var(--line);
-  border-radius:9px; cursor:pointer; }
-.avatar-option:hover, .avatar-option[aria-pressed="true"] { border-color:var(--amber); background:#342916; }
-.avatar-color-row { display:flex; align-items:center; gap:12px; }
-#avatarColor { width:52px; height:38px; background:transparent; border:none; cursor:pointer; }
-.avatar-upload-info { color:var(--muted); font-size:12px; margin-top:6px; }
-.avatar-editor .filerow { margin-top:10px; }
+.profile-avatar-edit { position:relative; display:inline-flex; align-items:center; justify-content:center; border:0;
+  border-radius:50%; background:transparent; padding:0; cursor:pointer; flex-shrink:0; }
+.profile-avatar-edit:focus-visible { outline:3px solid var(--amber); outline-offset:4px; }
+.profile-avatar-overlay { position:absolute; inset:0; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:rgba(8,10,13,.67); color:#fff; opacity:0; transition:opacity .18s ease; pointer-events:none; }
+.profile-avatar-overlay svg { width:27px; height:27px; fill:none; stroke:currentColor; stroke-width:2.3;
+  stroke-linecap:round; stroke-linejoin:round; }
+.profile-avatar-edit:hover .profile-avatar-overlay, .profile-avatar-edit:focus-visible .profile-avatar-overlay { opacity:1; }
+.profile-avatar-hint { font-size:12px; color:var(--muted); margin-top:3px; }
+.profile-score-panel { border:1px solid var(--line); background:var(--asphalt-2); border-radius:9px; padding:14px; min-width:0; }
+.profile-score-panel h3 { margin:0 0 3px; font-size:15px; }
+ .profile-score-subtitle { font-size:12px; color:var(--muted); margin-bottom:14px; }
+.profile-score-total { font-family:var(--font-head2); font-weight:700; font-style: italic; font-variant-numeric:tabular-nums; font-size:clamp(23px,5vw,42px); line-height:1.15; color:var(--amber); }
+.profile-score-unit { font-size:15px; font-weight:650; color:var(--text); margin-left:6px; }
+.profile-score-status { color:var(--muted); font-size:12px; padding:10px 0; }
+.profile-score-rounds { color:var(--muted); font-size:12px; margin-top:8px; }
+.avatar-editor { border-top:1px solid var(--line); margin-top:17px; padding-top:18px; }
+.avatar-editor .lede { margin-bottom:15px; }
+.avatar-simple-layout { display:flex; flex-wrap:wrap; gap:20px; align-items:center; }
+.avatar-simple-preview { width:166px; min-height:166px; display:flex; justify-content:center; align-items:center;
+  border:1px solid var(--line); background:var(--asphalt-2); border-radius:10px; }
+.avatar-simple-controls { flex:1; min-width:215px; }
+.avatar-choice-row { display:flex; flex-wrap:wrap; gap:9px; margin-bottom:13px; }
+.avatar-choice-row .btn { margin-top:0; }
+.avatar-choice-row .btn[aria-pressed='true'] { border-color:var(--amber); box-shadow:inset 0 0 0 1px var(--amber); color:var(--amber); }
+.avatar-simple-controls label { margin-top:6px; }
+.avatar-simple-controls input[type=color] { width:54px; height:42px; border:1px solid var(--line); border-radius:6px; background:transparent; cursor:pointer; }
+.avatar-simple-controls input[type=file] { max-width:430px; }
+.avatar-upload-info { color:var(--muted); font-size:12px; margin-top:7px; }
+.avatar-editor .filerow { margin-top:15px; }
 .avatar-message { margin-top:10px; font-size:13px; }
-.player-chip { display:inline-flex; align-items:center; justify-content:center; gap:9px; }
-
-/* F1 pilotu avataru konstruktors */
-.avatar-editor { border-top:1px solid var(--line); margin-top:18px; padding-top:20px; }
-.avatar-workspace { display:grid; grid-template-columns:minmax(220px, 290px) minmax(0,1fr); gap:24px; align-items:start; }
-.avatar-stage { position:sticky; top:16px; display:flex; flex-direction:column; align-items:center; gap:13px;
-  border:1px solid #3c4147; background:linear-gradient(155deg,#23272d,#131517); padding:18px 13px;
-  border-radius:12px; min-width:0; }
-.avatar-stage-preview { width:100%; display:flex; justify-content:center; }
-.f1-avatar.racer { background:#1c2027; }
-.f1-avatar.racer svg { display:block; width:100%; height:100%; }
-.f1-avatar.preview { width:255px; height:255px; max-width:100%; border-radius:13px; border:1px solid #4d525b; font-size:55px; }
-.avatar-stage .helptext { text-align:center; margin:0; }
-.avatar-stage-label { font-size:11px; text-transform:uppercase; font-weight:900; letter-spacing:1.2px; color:#f1bb43; }
-.avatar-settings { min-width:0; }
-.avatar-mode-tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:0 0 16px; }
-.avatar-mode-btn { border:1px solid #414650; border-radius:7px; background:#14161b; color:#d7dae0;
-  cursor:pointer; font-size:12px; font-family:var(--font-body); font-weight:800; padding:10px 5px; }
-.avatar-mode-btn[aria-pressed="true"] { border-color:var(--amber); background:#3b2b10; color:#ffcf69; }
-.avatar-mode-btn:hover { border-color:#ffcb56; }
-.avatar-fieldset { border:1px solid #343942; border-radius:10px; padding:13px; margin:0 0 13px; min-width:0; }
-.avatar-fieldset legend { color:#eceef2; font-size:13px; font-family:var(--font-head2); font-weight:800; font-style:italic; padding:0 8px; }
-.avatar-fieldgrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 14px; }
-.avatar-fieldgrid > div { min-width:0; }
-.avatar-fieldgrid label { margin:0 0 5px; text-transform:none; letter-spacing:0; font-size:12px; }
-.avatar-fieldgrid input[type=text] { width:100%; }
-.avatar-fieldgrid select { width:100%; }
-.avatar-controls-intro { font-size:12px; color:#aab1bd; margin:0 0 12px; }
-.avatar-color-row { display:flex; align-items:center; gap:12px; }
-.avatar-upload-info { color:var(--muted); font-size:12px; margin-top:6px; }
-.avatar-editor .filerow { margin-top:14px; }
-.avatar-message { min-height:17px; margin-top:10px; font-size:13px; }
-.avatar-picker { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 12px; }
-.avatar-option { width:44px; height:44px; display:flex; align-items:center; justify-content:center;
-  font-size:24px; background:var(--asphalt-2); border:1px solid var(--line); color:white;
-  border-radius:9px; cursor:pointer; }
-.avatar-option:hover, .avatar-option[aria-pressed="true"] { border-color:var(--amber); background:#342916; }
-@media (max-width:740px) {
-  .avatar-workspace { grid-template-columns:1fr; gap:14px; }
-  .avatar-stage { position:static; padding:12px; }
-  .f1-avatar.preview { width:205px; height:205px; }
-  .avatar-fieldgrid { gap:10px; }
+@media (max-width:720px) {
+  .f1-profile-layout { grid-template-columns:1fr; gap:14px; }
+  .profile-score-panel { width:100%; }
+  .profile-avatar-hint { font-size:11px; }
 }
-@media (max-width:420px) { .avatar-fieldgrid { grid-template-columns:1fr; } }
-
 </style>
 </head>
 <body>
@@ -578,7 +612,7 @@ input[type=file] {
   <!-- PREDICT TAB -->
   <section class="tab active" id="tab-predict">
     <h2>Veic savu sacīkšu prognozi!</h2>
-    <p class="lede">Ievadi savu vārdu, izvēlies sacīkšu nedēļas nogali un pēc tam norādi pirmos 10 finišētājus, kā arī "pole position" ieguvēju un ātrākā apļa pilotu. Prognozi vari mainīt jebkurā brīdī, pirms administrators nav fiksējis sacīkšu rezultātus.</p>
+    <p class="lede">Ielogojies savā kontā, izvēlies sacīkšu nedēļas nogali un pēc tam norādi pirmos 10 finišētājus, kā arī "pole position" ieguvēju un ātrākā apļa pilotu. Prognozi vari mainīt jebkurā brīdī, pirms administrators nav fiksējis sacīkšu rezultātus.</p>
 
     <div class="card" id="playerLoginCard">
   <h3>Spēlētāja konts</h3>
@@ -613,128 +647,58 @@ input[type=file] {
 </div>
 
 <div class="card" id="playerProfileCard" hidden>
-  <h3>Mans profils</h3>
-
-  <div class="f1-profile-heading">
-    <div id="playerAvatarPreview" aria-label="Tavs avatars"></div>
-    <strong id="playerDisplayName"></strong>
+  <div class="f1-profile-layout">
+    <div class="f1-profile-identity">
+      <h3>Mans profils</h3>
+      <div class="f1-profile-heading">
+        <button id="editAvatarBtn" class="profile-avatar-edit" type="button"
+                aria-label="Mainīt profila attēlu" title="Mainīt profila attēlu">
+          <span id="playerAvatarPreview" aria-hidden="true"></span>
+          <span class="profile-avatar-overlay" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z"/></svg>
+          </span>
+        </button>
+        <div>
+          <strong id="playerDisplayName"></strong>
+          <div class="profile-avatar-hint">Uzbrauc uz attēla, lai to mainītu</div>
+        </div>
+      </div>
+      <button class="btn secondary" id="playerLogoutBtn" type="button">Izlogoties</button>
+    </div>
+    <aside class="profile-score-panel" aria-labelledby="profileScoreTitle">
+      <h3 id="profileScoreTitle">Mani kopējie punkti</h3>
+      <div class="profile-score-subtitle">Tavs personīgais sezonas rezultāts</div>
+      <div id="profileScoreList" class="profile-score-list" aria-live="polite">
+        <div class="profile-score-status">Ielādē punktus…</div>
+      </div>
+    </aside>
   </div>
 
-  <button class="btn secondary" id="editAvatarBtn" type="button">
-    Rediģēt avataru
-  </button>
-  <button class="btn secondary" id="playerLogoutBtn" type="button">
-    Izlogoties
-  </button>
-
-
   <div class="avatar-editor" id="avatarEditor" hidden>
-    <h3>F1 pilota avataru konstruktors</h3>
-    <p class="lede">Izveido savu pilota tēlu: pielāgo seju, matus, sacīkšu kombinezonu un komandu. Priekšskatījums atjaunojas uzreiz.</p>
-    <div class="avatar-workspace">
-      <aside class="avatar-stage">
-        <span class="avatar-stage-label">Tavs pilots / Live preview</span>
-        <div id="avatarDraftPreview" class="avatar-stage-preview" aria-live="off"></div>
-        <p class="helptext">2026. gada komandu krāsās veidoti, oriģināli ilustratīvi tērpi (nevis oficiālu formu precīzas kopijas).</p>
-      </aside>
-      <div class="avatar-settings">
-        <div class="avatar-mode-tabs" role="group" aria-label="Avatara veids">
-          <button class="avatar-mode-btn" type="button" data-avatar-kind="racer" aria-pressed="true">🏎️ F1 pilots</button>
-          <button class="avatar-mode-btn" type="button" data-avatar-kind="emoji" aria-pressed="false">🏁 Simbols</button>
-          <button class="avatar-mode-btn" type="button" data-avatar-kind="image" aria-pressed="false">📸 Foto</button>
+    <h3>Profila attēls</h3>
+    <p class="lede">Izvēlies foto vai sava vārda pirmo burtu ar krāsainu fonu.</p>
+    <div class="avatar-simple-layout">
+      <div class="avatar-simple-preview" id="avatarDraftPreview" aria-label="Avatara priekšskatījums"></div>
+      <div class="avatar-simple-controls">
+        <div class="avatar-choice-row" role="group" aria-label="Profila attēla veids">
+          <button class="btn secondary small" id="avatarChooseInitial" type="button" aria-pressed="true">Burts un fons</button>
+          <button class="btn secondary small" id="avatarChoosePhoto" type="button" aria-pressed="false">Augšupielādēt foto</button>
         </div>
-        <div id="avatarRacerControls">
-          <fieldset class="avatar-fieldset">
-            <legend>Komanda un sacīkšu tērps</legend>
-            <div class="avatar-fieldgrid">
-              <div><label for="avatarTeam">F1 komanda</label><select id="avatarTeam" data-avatar-setting="team">
-                <option value="ferrari">Ferrari</option><option value="mclaren">McLaren</option><option value="mercedes">Mercedes</option>
-                <option value="redbull">Red Bull Racing</option><option value="astonmartin">Aston Martin</option><option value="williams">Williams</option>
-                <option value="racingbulls">Racing Bulls</option><option value="haas">Haas</option><option value="alpine">Alpine</option>
-                <option value="audi">Audi</option><option value="cadillac">Cadillac</option>
-              </select></div>
-              <div><label for="avatarSuitStyle">Apģērbs</label><select id="avatarSuitStyle" data-avatar-setting="suitStyle">
-                <option value="race">Sacīkšu kombinezons</option><option value="jacket">Komandas jaka</option><option value="polo">Komandas polo</option>
-              </select></div>
-              <div><label for="avatarNumber">Pilota numurs (0–99)</label><input id="avatarNumber" data-avatar-setting="number" type="text" inputmode="numeric" maxlength="2" placeholder="Piem., 16"></div>
-              <div><label for="avatarBackground">Fons</label><select id="avatarBackground" data-avatar-setting="background">
-                <option value="pitlane">Pitlane</option><option value="circuit">Trase</option><option value="garage">Garāža</option>
-                <option value="podium">Pjedestāls</option><option value="gradient">Komandas krāsas</option>
-              </select></div>
-            </div>
-          </fieldset>
-          <fieldset class="avatar-fieldset">
-            <legend>Seja un acis</legend>
-            <div class="avatar-fieldgrid">
-              <div><label for="avatarSkin">Ādas tonis</label><select id="avatarSkin" data-avatar-setting="skin">
-                <option value="porcelain">Ļoti gaišs</option><option value="fair">Gaišs</option><option value="warm">Silts</option><option value="tan">Iedegums</option><option value="brown">Brūns</option><option value="deep">Tumšs</option>
-              </select></div>
-              <div><label for="avatarFaceShape">Sejas forma</label><select id="avatarFaceShape" data-avatar-setting="faceShape">
-                <option value="oval">Ovāla</option><option value="round">Apaļa</option><option value="angular">Izteikts žoklis</option><option value="slim">Šaura</option>
-              </select></div>
-              <div><label for="avatarEyes">Acu krāsa</label><select id="avatarEyes" data-avatar-setting="eyes">
-                <option value="brown">Brūnas</option><option value="blue">Zilas</option><option value="green">Zaļas</option><option value="grey">Pelēkas</option><option value="hazel">Lazdu</option><option value="dark">Tumšas</option>
-              </select></div>
-              <div><label for="avatarEyeStyle">Acu izteiksme</label><select id="avatarEyeStyle" data-avatar-setting="eyeStyle">
-                <option value="normal">Dabiska</option><option value="focused">Koncentrēta</option><option value="wide">Atvērta</option><option value="cheerful">Smaidīga</option>
-              </select></div>
-              <div><label for="avatarBrows">Uzacis</label><select id="avatarBrows" data-avatar-setting="brows">
-                <option value="natural">Dabiskas</option><option value="thick">Biezas</option><option value="sharp">Izteiktas</option><option value="soft">Maigas</option>
-              </select></div>
-              <div><label for="avatarNose">Deguns</label><select id="avatarNose" data-avatar-setting="nose">
-                <option value="natural">Vidējs</option><option value="small">Mazs</option><option value="long">Garāks</option>
-              </select></div>
-              <div><label for="avatarMouth">Sejas izteiksme</label><select id="avatarMouth" data-avatar-setting="mouth">
-                <option value="smile">Smaids</option><option value="neutral">Nopietns</option><option value="grin">Plats smaids</option><option value="smirk">Pussmaids</option>
-              </select></div>
-              <div><label for="avatarFreckles">Vasaras raibumi</label><select id="avatarFreckles" data-avatar-setting="freckles"><option value="no">Nav</option><option value="yes">Ir</option></select></div>
-            </div>
-          </fieldset>
-          <fieldset class="avatar-fieldset">
-            <legend>Mati un aksesuāri</legend>
-            <div class="avatar-fieldgrid">
-              <div><label for="avatarHairStyle">Matu griezums</label><select id="avatarHairStyle" data-avatar-setting="hairStyle">
-                <option value="sidepart">Celiņš sānos</option><option value="short">Īsi</option><option value="buzz">Ļoti īsi</option>
-                <option value="fade">Fade</option><option value="quiff">Pacelti</option><option value="curly">Lokaini</option>
-                <option value="wavy">Viļņaini</option><option value="long">Gari</option><option value="slick">Atglausti</option>
-                <option value="bald">Bez matiem</option>
-              </select></div>
-              <div><label for="avatarHairColor">Matu krāsa</label><select id="avatarHairColor" data-avatar-setting="hairColor">
-                <option value="brown">Brūna</option><option value="darkbrown">Tumši brūna</option><option value="black">Melna</option>
-                <option value="blond">Blonda</option><option value="golden">Zeltaina</option><option value="ginger">Ruda</option>
-                <option value="grey">Sirma</option><option value="white">Balta</option>
-              </select></div>
-              <div><label for="avatarFacialHair">Sejas apmatojums</label><select id="avatarFacialHair" data-avatar-setting="facialHair">
-                <option value="none">Nav</option><option value="stubble">Rugāji</option><option value="mustache">Ūsas</option>
-                <option value="goatee">Kazbārdiņa</option><option value="beard">Bārda</option>
-              </select></div>
-              <div><label for="avatarGlasses">Brilles</label><select id="avatarGlasses" data-avatar-setting="glasses">
-                <option value="none">Nav</option><option value="round">Apaļas</option><option value="square">Taisnstūra</option><option value="sunglasses">Saulesbrilles</option>
-              </select></div>
-              <div><label for="avatarHeadwear">Galvassega</label><select id="avatarHeadwear" data-avatar-setting="headwear">
-                <option value="none">Nav</option><option value="cap">Komandas cepure</option><option value="headset">Komandas austiņas</option>
-              </select></div>
-            </div>
-          </fieldset>
-        </div>
-        <div id="avatarSymbolControls" hidden>
-          <p class="avatar-controls-intro">Ja vēlies klasisku simbolu, iepriekšējie avatari joprojām ir pieejami.</p>
-          <label>F1 simbols</label>
-          <div id="avatarEmojiChoices" class="avatar-picker" role="group" aria-label="Avataru simboli"></div>
-          <label for="avatarColor">Fona krāsa</label>
-          <div class="avatar-color-row"><input type="color" id="avatarColor" value="#e10600"><span class="helptext">Simbolam vai iniciāļiem</span></div>
+        <div id="avatarInitialControls">
+          <label for="avatarColor">Burta fona krāsa</label>
+          <input id="avatarColor" type="color" value="#e10600">
+          <div class="avatar-upload-info">Burts tiek automātiski ņemts no tava lietotājvārda.</div>
         </div>
         <div id="avatarImageControls" hidden>
-          <label for="avatarPhotoFile">Augšupielādē savu attēlu</label>
+          <label for="avatarPhotoFile">Izvēlies foto</label>
           <input id="avatarPhotoFile" type="file" accept="image/png,image/jpeg,image/webp">
-          <div class="avatar-upload-info">JPEG, PNG vai WebP, līdz 3 MB. Attēlu automātiski samazina. Publiski redzams citiem spēlētājiem.</div>
+          <div class="avatar-upload-info">JPG, PNG vai WebP, līdz 3 MB. Foto automātiski tiek apgriezts kvadrātā un samazināts. Būs redzams arī citiem spēlētājiem.</div>
         </div>
       </div>
     </div>
     <div class="filerow">
-      <button class="btn" type="button" id="saveAvatarBtn">Saglabāt avataru</button>
-      <button class="btn secondary" type="button" id="cancelAvatarBtn">Atcelt</button>
-      <button class="btn secondary" type="button" id="resetAvatarBtn">Atjaunot noklusēto pilotu</button>
+      <button class="btn" id="saveAvatarBtn" type="button">Saglabāt attēlu</button>
+      <button class="btn secondary" id="cancelAvatarBtn" type="button">Atcelt</button>
     </div>
     <div id="avatarEditMsg" class="avatar-message" role="status" aria-live="polite"></div>
   </div>
@@ -931,10 +895,10 @@ input[type=file] {
       </div>
       <div class="card">
         <h3>Spēlētāju saraksts</h3>
-        <p class="lede">Dzēš spēlētāja visas prognozes un punktus par katru kārtu – tie pazudīs no līderu saraksta. Šo darbību nevar atsaukt.</p>
+        <div class="msg info" style="margin:0 0 14px;">Neatgriezeniska darbība: tiks dzēsts izvēlētā spēlētāja Auth konts, profils, avatars, prognozes un punkti. Admin kontu dzēst nevar. Pirms dzēšanas saglabā rezerves kopiju.</div>
         <label>Spēlētājs</label>
         <select id="managePlayerSelect"><option value="">Ielādē spēlētājus…</option></select>
-        <button class="btn secondary small" id="deletePlayerBtn" style="margin-top:10px;">Dzēst spēlētāju</button>
+        <button class="btn secondary small" id="deletePlayerBtn" type="button" style="margin-top:10px;">Pilnībā dzēst spēlētāju</button>
         <div id="managePlayerMsg"></div>
       </div>
     </div>
@@ -1159,460 +1123,221 @@ let currentPlayerProfile = null;
 let authRenderNonce = 0;
 
 
-/* ---------------- F1 PILOTU AVATARU KONSTRUKTORS ---------------- */
-// f1_profiles.avatar JSONB: nekādi jauni SQL lauki vai ārējie attēlu serveri nav vajadzīgi.
-// Saderīgs ar vecajiem kind:'emoji', kind:'image' un kind:'initials' avatariem.
-const F1_EMOJIS = ['🏎️','🏁','🏆','🪖','⚡','🔥','🚀','🦊','🐺','🦁','😎','💎'];
+/* ---------------- VIENKĀRŠI PROFILA AVATARI ---------------- */
+// Glabājam nelielu attēlu vai krāsu jau esošajā f1_profiles.avatar JSONB.
+// Iepriekš saglabātie foto paliek; vecie SVG/emoji avati tiek rādīti kā iniciālis.
 const F1_AVATAR_COLOR = '#e10600';
-const TEAM_KITS = {
-  ferrari:      {label:'FERRARI',      subtitle:'SCUDERIA', base:'#c91427', secondary:'#83101d', accent:'#ffdc48', third:'#f4f1e8', badge:'#ffdc48', badgeText:'#32111a', pattern:'slashes'},
-  mclaren:      {label:'McLAREN',      subtitle:'RACING', base:'#fb870c', secondary:'#1b2631', accent:'#53b9e9', third:'#fff2de', badge:'#222c34', badgeText:'#fff2de', pattern:'chevron'},
-  mercedes:     {label:'MERCEDES',     subtitle:'AMG', base:'#20252b', secondary:'#101215', accent:'#30e2cb', third:'#d9e3e8', badge:'#30e2cb', badgeText:'#122421', pattern:'stripes'},
-  redbull:      {label:'RED BULL',     subtitle:'RACING', base:'#132b5b', secondary:'#101833', accent:'#ee253f', third:'#f7cf37', badge:'#f7cf37', badgeText:'#1c274b', pattern:'thunder'},
-  astonmartin:  {label:'ASTON MARTIN', subtitle:'RACING', base:'#12665c', secondary:'#0a373a', accent:'#baf55b', third:'#edf4ef', badge:'#baf55b', badgeText:'#153d38', pattern:'wings'},
-  williams:     {label:'WILLIAMS',     subtitle:'RACING', base:'#1359b9', secondary:'#113a7a', accent:'#77cdf6', third:'#ffffff', badge:'#ffffff', badgeText:'#18438e', pattern:'stripes'},
-  racingbulls:  {label:'RACING BULLS', subtitle:'F1 TEAM', base:'#edf1f5', secondary:'#234c91', accent:'#d72038', third:'#162f60', badge:'#21468a', badgeText:'#ffffff', pattern:'chevron'},
-  haas:         {label:'HAAS',         subtitle:'F1 TEAM', base:'#e7e9ea', secondary:'#202934', accent:'#d72831', third:'#4d5967', badge:'#d72831', badgeText:'#ffffff', pattern:'slashes'},
-  alpine:       {label:'ALPINE',       subtitle:'RACING', base:'#1965e2', secondary:'#0e2567', accent:'#fa92cd', third:'#ffffff', badge:'#fa92cd', badgeText:'#29163b', pattern:'stripes'},
-  audi:         {label:'AUDI',         subtitle:'F1 TEAM', base:'#2e3339', secondary:'#15171a', accent:'#e63845', third:'#d7d9dd', badge:'#d7d9dd', badgeText:'#202327', pattern:'slashes'},
-  cadillac:     {label:'CADILLAC',     subtitle:'F1 TEAM', base:'#1a1d25', secondary:'#313540', accent:'#c5a56a', third:'#f1f1f0', badge:'#c5a56a', badgeText:'#272420', pattern:'wings'}
-};
-const F1_SKINS = { porcelain:'#f9ddc5', fair:'#e7b88d', warm:'#cb9065', tan:'#a96f4c', brown:'#815037', deep:'#583726' };
-const F1_HAIR_COLORS = { brown:'#6a392b', darkbrown:'#372720', black:'#191b20', blond:'#d0a662', golden:'#edc273', ginger:'#b8562e', grey:'#838991', white:'#e2e7e5' };
-const F1_EYE_COLORS = { brown:'#6e3c29', blue:'#4a87ba', green:'#549069', grey:'#7e8a99', hazel:'#8c8752', dark:'#302d2c' };
-const F1_AVATAR_CHOICES = {
-  team:Object.keys(TEAM_KITS), suitStyle:['race','jacket','polo'],
-  background:['pitlane','circuit','garage','podium','gradient'],
-  skin:Object.keys(F1_SKINS), faceShape:['oval','round','angular','slim'],
-  eyes:Object.keys(F1_EYE_COLORS),eyeStyle:['normal','focused','wide','cheerful'],
-  brows:['natural','thick','sharp','soft'],nose:['natural','small','long'],
-  mouth:['smile','neutral','grin','smirk'],freckles:['no','yes'],
-  hairStyle:['sidepart','short','buzz','fade','quiff','curly','wavy','long','slick','bald'],
-  hairColor:Object.keys(F1_HAIR_COLORS),facialHair:['none','stubble','mustache','goatee','beard'],
-  glasses:['none','round','square','sunglasses'],headwear:['none','cap','headset']
-};
-const DEFAULT_RACER_AVATAR = Object.freeze({
-  kind:'racer', version:2, team:'ferrari', suitStyle:'race', number:'16',
-  background:'pitlane', skin:'fair',faceShape:'oval',eyes:'brown',eyeStyle:'normal',
-  brows:'natural',nose:'natural',mouth:'smile',freckles:'no',
-  hairStyle:'sidepart',hairColor:'darkbrown',facialHair:'none',glasses:'none',headwear:'none'
-});
-let avatarDraft = {...DEFAULT_RACER_AVATAR};
-let racerDraftMemory = {...DEFAULT_RACER_AVATAR};
+let avatarDraft = {kind:'initials',color:F1_AVATAR_COLOR};
+let avatarEditorMode = 'initials';
 let avatarUploadBusy = false;
-let avatarSvgSerial = 0;
+let profileScoreRequest = 0;
 
 function safeAvatar(raw) {
   const a = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-  if (a.kind === 'racer') {
-    const clean = {...DEFAULT_RACER_AVATAR};
-    for (const [key, values] of Object.entries(F1_AVATAR_CHOICES)) {
-      if (typeof a[key] === 'string' && values.includes(a[key])) clean[key] = a[key];
-    }
-    clean.number = (typeof a.number === 'string' || typeof a.number === 'number') &&
-      /^\d{0,2}$/.test(String(a.number)) ? String(a.number) : DEFAULT_RACER_AVATAR.number;
-    return clean;
-  }
   const color = typeof a.color === 'string' && /^#[a-f0-9]{6}$/i.test(a.color)
     ? a.color : F1_AVATAR_COLOR;
   if (a.kind === 'image' && typeof a.image === 'string' &&
       /^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(a.image) &&
-      a.image.length <= 45000) {
-    return {kind:'image',color,image:a.image};
-  }
-  if (a.kind === 'emoji' && F1_EMOJIS.includes(a.emoji)) {
-    return {kind:'emoji',color,emoji:a.emoji};
-  }
+      a.image.length <= 45000) return {kind:'image',color,image:a.image};
   return {kind:'initials',color};
 }
 
-// SVG satur TIKAI augstāk definētas izvēļu vērtības. Lietotāja brīvtekstu SVG neievieto.
-const S = (path,fill,stroke='#422b27',sw=1.8) =>
-  `<path d="${path}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`;
-function racerBackdrop(a, kit) {
-  const dark = kit.secondary;
-  if (a.background === 'pitlane') return `
-    <rect width="320" height="320" fill="#141923"/>
-    <path d="M0 0H320V74L0 175Z" fill="${dark}" opacity=".65"/>
-    <rect x="0" y="46" width="320" height="6" fill="${kit.accent}" opacity=".72"/>
-    <path d="M0 260L138 203H320V320H0Z" fill="#35383f"/>
-    <path d="M0 320L119 225M320 320L221 225" stroke="#d7d2c7" stroke-width="4" opacity=".25"/>
-    <path d="M0 175L320 94" stroke="#ffffff" stroke-width="2" opacity=".09"/>
-    <circle cx="260" cy="84" r="75" fill="${kit.base}" opacity=".26"/>`;
-  if (a.background === 'garage') return `
-    <rect width="320" height="320" fill="#181b23"/>
-    <rect width="65" height="250" x="0" fill="#292e37"/>
-    <rect width="65" height="250" x="255" fill="#292e37"/>
-    <rect x="14" y="17" width="292" height="13" fill="${kit.accent}" opacity=".76"/>
-    <rect x="22" y="46" width="55" height="92" rx="5" fill="#414854" opacity=".5"/>
-    <rect x="245" y="46" width="50" height="92" rx="5" fill="#414854" opacity=".5"/>
-    <circle cx="161" cy="97" r="110" fill="${kit.base}" opacity=".17"/>
-    <path d="M0 242H320V320H0" fill="#2d3139"/>`;
-  if (a.background === 'circuit') return `
-    <rect width="320" height="320" fill="#1c303b"/>
-    <path d="M0 207L320 131V320H0Z" fill="#43565d"/>
-    <path d="M0 219L320 143" stroke="#ece9e5" stroke-width="9"/>
-    <path d="M0 233L320 157" stroke="${kit.accent}" stroke-width="6"/>
-    <path d="M0 0H320V72L0 123Z" fill="#91bed0" opacity=".35"/>
-    <circle cx="270" cy="50" r="48" fill="#e5e8d2" opacity=".13"/>`;
-  if (a.background === 'podium') return `
-    <rect width="320" height="320" fill="#171c27"/>
-    <path d="M0 0L320 320M-80 0L240 320M80 0L400 320" stroke="${kit.accent}" stroke-width="19" opacity=".1"/>
-    <circle cx="159" cy="140" r="111" fill="${kit.base}" opacity=".34"/>
-    <circle cx="159" cy="140" r="93" fill="none" stroke="${kit.accent}" stroke-width="2" opacity=".5"/>
-    <path d="M0 287H320" stroke="${kit.third}" stroke-width="7" opacity=".45"/>`;
-  return `<rect width="320" height="320" fill="${kit.secondary}"/>
-    <circle cx="160" cy="115" r="175" fill="${kit.base}" opacity=".82"/>
-    <path d="M-30 321L320 -30" stroke="${kit.accent}" stroke-width="64" opacity=".11"/>
-    <circle cx="162" cy="151" r="115" fill="none" stroke="${kit.third}" opacity=".15" stroke-width="3"/>`;
-}
-function racerSuitPattern(kit) {
-  switch (kit.pattern) {
-    case 'slashes': return `<path d="M63 256L99 239L75 320H54Z" fill="${kit.accent}" opacity=".93"/>
-      <path d="M257 256L222 239L246 320H267Z" fill="${kit.accent}" opacity=".93"/>
-      <path d="M104 243L81 310M216 243L239 310" stroke="${kit.third}" stroke-width="4" opacity=".8"/>`;
-    case 'chevron': return `<path d="M72 247L133 281L160 296L187 281L248 247" fill="none" stroke="${kit.accent}" stroke-width="10"/>
-      <path d="M62 253L160 312L258 253" stroke="${kit.third}" stroke-width="3" opacity=".8" fill="none"/>`;
-    case 'stripes': return `<path d="M59 261L92 231L100 320H84Z" fill="${kit.accent}"/>
-      <path d="M261 261L228 231L220 320H236Z" fill="${kit.accent}"/>
-      <path d="M65 260L89 239M255 260L231 239" stroke="${kit.third}" stroke-width="4"/>`;
-    case 'thunder': return `<path d="M65 245L102 235L91 269L117 271L74 320L87 282L57 284Z" fill="${kit.accent}"/>
-      <path d="M255 245L218 235L229 269L203 271L246 320L233 282L263 284Z" fill="${kit.third}"/>`;
-    case 'wings': return `<path d="M65 259L101 237L136 271L159 283L184 271L219 237L255 259" stroke="${kit.accent}" stroke-width="8" fill="none"/>
-      <path d="M71 270L102 253L134 283M249 270L218 253L186 283" stroke="${kit.third}" stroke-width="3" fill="none"/>`;
-    default: return '';
-  }
-}
-function racerSuit(a,kit) {
-  const outline = '#10151b';
-  const race = a.suitStyle === 'race';
-  const polo = a.suitStyle === 'polo';
-  const body = `<path d="M37 321L45 271Q50 239 73 231L121 219L133 206H186L199 219L247 231Q270 239 276 271L283 321Z"
-      fill="${kit.base}" stroke="${outline}" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M45 268Q65 243 92 237L88 321H29Z" fill="${kit.secondary}" opacity=".92"/>
-    <path d="M275 268Q255 243 228 237L232 321H291Z" fill="${kit.secondary}" opacity=".92"/>
-    <path d="M103 235L125 217H195L217 235L211 321H109Z" fill="${kit.base}"/>
-    <path d="M106 232L130 217L160 248L189 217L214 232" fill="none" stroke="${kit.third}" stroke-width="3" opacity=".65"/>`;
-  const zipper = race ? `<path d="M160 238V321" stroke="${kit.secondary}" stroke-width="13"/>
-    <path d="M160 239V321" stroke="${kit.third}" stroke-width="3" opacity=".85"/>
-    <path d="M154 259H166" stroke="${kit.accent}" stroke-width="5"/>` :
-    polo ? `<path d="M132 218L160 251L187 218L160 268Z" fill="${kit.secondary}"/>
-      <path d="M159 246V281" stroke="${kit.third}" stroke-width="3"/>` :
-      `<path d="M155 233H165V320H155Z" fill="${kit.secondary}"/>
-       <path d="M160 239V307" stroke="${kit.third}" stroke-width="2"/>`;
-  const collars = race ? `<path d="M130 209L160 229L190 209L192 234L160 251L128 234Z" fill="${kit.secondary}" stroke="${kit.third}" stroke-width="3"/>
-    <path d="M140 219L160 232L180 219" fill="none" stroke="${kit.accent}" stroke-width="4"/>` :
-    polo ? `<path d="M132 208L159 242L136 260L118 218Z" fill="${kit.secondary}" stroke="${kit.third}" stroke-width="2"/>
-      <path d="M188 208L161 242L184 260L202 218Z" fill="${kit.secondary}" stroke="${kit.third}" stroke-width="2"/>` :
-      `<path d="M124 212L139 238L160 230L181 238L197 212L187 204H134Z" fill="${kit.secondary}" stroke="${kit.accent}" stroke-width="3"/>`;
-  const armSeams = `<path d="M88 243Q99 275 91 320M232 243Q221 275 229 320" fill="none" stroke="${kit.third}" stroke-width="2" opacity=".6"/>
-    <path d="M48 292L93 279M272 292L227 279" stroke="${kit.accent}" stroke-width="5" opacity=".8"/>`;
-  const pattern = racerSuitPattern(kit);
-  const brandedPatches = `<rect x="99" y="270" width="41" height="23" rx="3" fill="${kit.badge}" stroke="${kit.secondary}" stroke-width="1.5"/>
-    <text x="119.5" y="280" text-anchor="middle" fill="${kit.badgeText}" font-size="5.9" font-family="Arial,sans-serif" font-weight="900">${kit.subtitle}</text>
-    <path d="M103 286H137" stroke="${kit.badgeText}" stroke-width="2" opacity=".6"/>
-    <rect x="180" y="270" width="44" height="23" rx="3" fill="${kit.secondary}" stroke="${kit.third}" stroke-width="1.2"/>
-    <text x="202" y="279" text-anchor="middle" fill="${kit.third}" font-size="7" font-family="Arial,sans-serif" font-weight="900">F1</text>
-    <path d="M188 286H216" stroke="${kit.accent}" stroke-width="3"/>`;
-  const label = `<rect x="120" y="296" width="80" height="19" rx="3" fill="${kit.secondary}" stroke="${kit.accent}" stroke-width="1"/>
-    <text x="160" y="308.5" text-anchor="middle" fill="${kit.third}" font-size="${kit.label.length>10?7:9}" font-family="Arial,sans-serif" font-weight="900" letter-spacing=".5">${kit.label}</text>`;
-  const number = a.number ? `<rect x="146" y="265" width="28" height="23" rx="3" fill="${kit.badge}"/>
-    <text x="160" y="282" text-anchor="middle" fill="${kit.badgeText}" font-size="18" font-family="Arial,sans-serif" font-weight="900">${a.number}</text>` : '';
-  return `<g class="f1-suit">${body}${pattern}${armSeams}${zipper}${collars}${brandedPatches}${label}${number}</g>`;
-}
-const F1_FACE_PATHS = {
-  oval:'M160 86C126 86 105 111 106 153C107 188 131 215 160 222C189 215 213 188 214 153C215 111 194 86 160 86Z',
-  round:'M160 88C125 86 102 113 103 156C104 192 128 218 160 221C192 218 216 192 217 156C218 113 195 86 160 88Z',
-  angular:'M160 87C126 87 104 109 105 153L115 187L138 211L160 224L182 211L205 187L215 153C216 109 194 87 160 87Z',
-  slim:'M160 84C132 84 112 105 112 148C112 183 129 210 160 225C191 210 208 183 208 148C208 105 188 84 160 84Z'
-};
-function racerHairBack(a, color) {
-  if (a.hairStyle === 'long') return `<path d="M112 130Q102 70 159 76Q224 71 208 143L229 230Q197 241 185 208H137Q116 246 91 229Z" fill="${color}" stroke="#2d2727" stroke-width="2"/>`;
-  if (a.hairStyle === 'wavy') return `<path d="M107 133Q94 79 150 77Q211 63 214 137L225 208Q202 217 194 190L128 190Q110 215 96 207Z" fill="${color}"/>`;
-  return '';
-}
-function racerHairFront(a,color) {
-  if (a.hairStyle === 'bald') return '';
-  const shine = `<path d="M127 102Q152 88 178 98" stroke="#fff" stroke-opacity=".14" stroke-width="4" fill="none"/>`;
-  const hair = {
-    buzz:`<path d="M109 133Q111 85 160 84Q209 85 211 133Q179 110 160 111Q137 110 109 133Z" fill="${color}"/>`,
-    short:`<path d="M108 137Q102 94 123 91Q134 75 157 84Q180 70 195 90Q212 89 214 133L197 115Q176 120 160 109Q144 122 122 113Z" fill="${color}"/>`,
-    fade:`<path d="M108 142Q103 107 123 96Q141 83 169 85Q196 77 212 111L211 141L201 135L197 109Q160 99 127 114L116 142Z" fill="${color}"/><path d="M109 138L117 121L120 152L112 158Z" fill="${color}"/>`,
-    sidepart:`<path d="M106 143Q102 99 122 91Q145 66 185 83Q213 94 216 135L206 143L198 110Q180 100 168 104Q146 119 117 125L116 145Z" fill="${color}"/>` +
-      `<path d="M137 104Q170 95 199 112" stroke="#fff" stroke-opacity=".21" stroke-width="3" fill="none"/>`,
-    quiff:`<path d="M106 145Q98 104 119 94Q123 66 147 69Q175 51 193 83Q217 81 216 142L203 126Q184 105 170 113Q139 127 119 123Z" fill="${color}"/><path d="M135 94Q161 72 179 89" stroke="#fff" stroke-opacity=".18" stroke-width="6" fill="none"/>`,
-    curly:`<path d="M103 143Q94 126 103 114Q92 91 118 89Q119 66 144 77Q161 60 177 74Q198 65 209 87Q229 98 215 118L214 142L199 128L125 129L112 147Z" fill="${color}"/>`+
-      [[114,105,13],[135,89,14],[158,84,14],[183,89,15],[204,108,13],[125,117,13],[156,110,13],[187,115,13]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" stroke="#1d1a1a" stroke-opacity=".27" stroke-width="1.4"/>`).join(''),
-    wavy:`<path d="M107 141Q99 112 110 101Q109 77 133 81Q153 63 170 78Q196 68 207 99Q217 113 212 141L202 126Q187 112 176 123Q160 109 147 125Q128 113 118 138Z" fill="${color}"/>`,
-    long:`<path d="M107 146Q100 112 112 97Q122 75 145 83Q172 67 195 88Q215 107 212 141L195 111Q173 108 160 102Q143 122 117 125Z" fill="${color}"/>`,
-    slick:`<path d="M107 143Q99 105 118 94Q136 77 165 82Q190 78 211 98L215 139L203 126Q178 113 129 120L115 145Z" fill="${color}"/><path d="M132 113Q159 91 201 105M140 115Q166 100 199 111" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="2"/>`
-  }[a.hairStyle] || '';
-  return hair + (a.hairStyle === 'buzz' ? '' : shine);
-}
-function racerFaceDetails(a, skin, hair) {
-  const eyes=F1_EYE_COLORS[a.eyes];
-  const eyeY=a.eyeStyle==='wide'?156:160;
-  const open=a.eyeStyle==='wide'?9:a.eyeStyle==='focused'?4.7:7;
-  const eyeParts = [140,180].map(x=>{
-    const pupilY=eyeY+(a.eyeStyle==='focused'?1:0);
-    return `<ellipse cx="${x}" cy="${eyeY}" rx="11.7" ry="${open}" fill="#fafaf4" stroke="#594037" stroke-width="1.7"/>
-      <circle cx="${x}" cy="${pupilY}" r="5.3" fill="${eyes}"/><circle cx="${x+1}" cy="${pupilY}" r="2.7" fill="#202127"/>
-      <circle cx="${x+2}" cy="${pupilY-1.6}" r="1.8" fill="white"/>
-      ${a.eyeStyle==='cheerful'?`<path d="M${x-12} ${eyeY+6}Q${x} ${eyeY+10} ${x+12} ${eyeY+6}" fill="none" stroke="#9d614f" stroke-width="1"/>`:''}`;
-  }).join('');
-  const browSw=a.brows==='thick'?7:a.brows==='soft'?2.8:4.5;
-  const browPath=a.brows==='sharp' ?
-    `<path d="M126 143L152 138M169 138L194 143" fill="none" stroke="${hair}" stroke-width="${browSw}" stroke-linecap="round"/>`:
-    `<path d="M127 145Q140 ${a.eyeStyle==='focused'?141:135} 152 143M169 143Q181 ${a.eyeStyle==='focused'?141:135} 193 145" fill="none" stroke="${hair}" stroke-width="${browSw}" stroke-linecap="round"/>`;
-  const nose = a.nose==='small'?`<path d="M157 175Q160 180 165 175" fill="none" stroke="#8c5341" stroke-width="2"/>`:
-    a.nose==='long'?`<path d="M160 158L155 186Q160 192 168 187" fill="none" stroke="#8c5341" stroke-width="2.3" stroke-linecap="round"/>`:
-    `<path d="M159 165L155 183Q160 188 166 183" fill="none" stroke="#915947" stroke-width="2.3" stroke-linecap="round"/>`;
-  const mouth = a.mouth==='neutral'?`<path d="M144 199Q160 200 176 199" fill="none" stroke="#743f3b" stroke-width="2.6" stroke-linecap="round"/>`:
-    a.mouth==='grin'?`<path d="M142 195Q160 213 178 195Q172 212 160 213Q148 212 142 195Z" fill="#ffffff" stroke="#75423d" stroke-width="2"/>`:
-    a.mouth==='smirk'?`<path d="M146 201Q166 207 179 196" stroke="#75423d" fill="none" stroke-width="2.7" stroke-linecap="round"/>`:
-    `<path d="M143 197Q160 214 177 197" fill="none" stroke="#75423d" stroke-width="2.9" stroke-linecap="round"/>`;
-  const freckles=a.freckles==='yes'?`<g fill="#9c6248" opacity=".58">${[[123,175],[130,179],[136,174],[185,175],[190,180],[197,175]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.9"/>`).join('')}</g>`:'';
-  const facialHair = a.facialHair==='none'?'':a.facialHair==='stubble'?
-    `<path d="M121 180Q124 210 160 220Q196 210 199 180" fill="none" stroke="${hair}" stroke-width="8" stroke-opacity=".25" stroke-dasharray="1 5"/>`:
-    a.facialHair==='mustache'?`<path d="M137 191Q151 185 160 191Q169 185 183 191Q169 198 160 194Q151 198 137 191Z" fill="${hair}"/>`:
-    a.facialHair==='goatee'?`<path d="M145 207Q160 216 175 207L168 222H152Z" fill="${hair}" opacity=".94"/>`:
-    `<path d="M113 176Q114 198 133 209Q147 222 160 226Q174 222 189 209Q206 194 207 176Q198 204 182 205L174 218Q160 225 146 218L138 205Q123 200 113 176Z" fill="${hair}" opacity=".96"/>`;
-  return `<path d="M121 183Q130 196 143 194M177 194Q189 197 200 183" fill="none" stroke="#a56c54" opacity=".18" stroke-width="5"/>
-    ${browPath}${eyeParts}${nose}${freckles}${mouth}${facialHair}`;
-}
-function racerAccessories(a,kit) {
-  const glasses = a.glasses==='none'?'': a.glasses==='sunglasses'?
-    `<path d="M122 151Q138 146 155 151L153 170Q143 180 129 172Z" fill="#101924" stroke="#b6bcc9" stroke-width="3"/>
-     <path d="M165 151Q181 146 198 151L191 172Q177 180 167 170Z" fill="#101924" stroke="#b6bcc9" stroke-width="3"/>
-     <path d="M155 154Q160 151 165 154" stroke="#b6bcc9" stroke-width="4"/>`:
-    a.glasses==='round'?`<circle cx="140" cy="160" r="16" fill="#e7edf3" fill-opacity=".09" stroke="#29333e" stroke-width="3"/>
-      <circle cx="180" cy="160" r="16" fill="#e7edf3" fill-opacity=".09" stroke="#29333e" stroke-width="3"/>
-      <path d="M156 159Q160 154 164 159M124 158L111 155M196 158L210 155" stroke="#29333e" stroke-width="3" fill="none"/>`:
-    `<rect x="123" y="148" width="33" height="25" rx="6" fill="#e7edf3" fill-opacity=".1" stroke="#29333e" stroke-width="3"/>
-      <rect x="164" y="148" width="33" height="25" rx="6" fill="#e7edf3" fill-opacity=".1" stroke="#29333e" stroke-width="3"/>
-      <path d="M156 154H164M123 155L111 152M197 155L210 152" stroke="#29333e" stroke-width="3"/>`;
-  const headwear = a.headwear==='cap'?`<path d="M106 120Q99 75 160 77Q218 79 215 122Q160 139 106 120Z" fill="${kit.base}" stroke="${kit.secondary}" stroke-width="4"/>
-    <path d="M104 120Q161 126 219 117L235 131Q173 145 112 134Z" fill="${kit.secondary}" stroke="${kit.accent}" stroke-width="3"/>
-    <text x="161" y="111" text-anchor="middle" fill="${kit.third}" font-size="12" font-weight="900" font-family="Arial,sans-serif">${kit.label.length>10?kit.subtitle:kit.label}</text>`:
-    a.headwear==='headset'?`<path d="M103 157Q92 73 161 72Q228 73 216 157" stroke="#171d25" stroke-width="13" fill="none"/>
-      <path d="M103 157Q92 73 161 72Q228 73 216 157" stroke="${kit.accent}" stroke-width="4" fill="none"/>
-      <rect x="92" y="143" width="24" height="51" rx="9" fill="#171d25" stroke="${kit.third}" stroke-width="2"/>
-      <rect x="206" y="143" width="24" height="51" rx="9" fill="#171d25" stroke="${kit.third}" stroke-width="2"/>
-      <path d="M219 195Q222 213 191 216" stroke="#171d25" stroke-width="5" fill="none"/>
-      <circle cx="189" cy="216" r="5" fill="${kit.accent}"/>`:'';
-  return glasses + headwear;
-}
-function renderRacerSvg(raw) {
-  const a=safeAvatar(raw);
-  const kit=TEAM_KITS[a.team];
-  const skin=F1_SKINS[a.skin];
-  const hair=F1_HAIR_COLORS[a.hairColor];
-  const id=`f1av-${++avatarSvgSerial}`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="F1 pilota avatars" preserveAspectRatio="xMidYMid slice">
-    <defs><clipPath id="${id}"><rect x="0" y="0" width="320" height="320" rx="8"/></clipPath></defs>
-    <g clip-path="url(#${id})">${racerBackdrop(a,kit)}
-      <circle cx="160" cy="144" r="101" fill="${kit.accent}" opacity=".11"/>
-      <path d="M141 197L139 229Q161 244 183 229L179 197" fill="${skin}" stroke="#925c48" stroke-width="2"/>
-      ${racerSuit(a,kit)}
-      ${racerHairBack(a,hair)}
-      <ellipse cx="108" cy="162" rx="12" ry="20" fill="${skin}" stroke="#925c48" stroke-width="2"/>
-      <ellipse cx="212" cy="162" rx="12" ry="20" fill="${skin}" stroke="#925c48" stroke-width="2"/>
-      ${S(F1_FACE_PATHS[a.faceShape],skin,'#935c4c',2.6)}
-      <path d="M118 155Q119 196 158 217" stroke="#ffffff" stroke-width="4" opacity=".1" fill="none"/>
-      ${racerFaceDetails(a,skin,hair)}
-      ${racerHairFront(a,hair)}
-      ${racerAccessories(a,kit)}
-      <path d="M0 318H320" stroke="${kit.accent}" stroke-width="5" opacity=".95"/>
-    </g>
-  </svg>`;
-}
 function createF1Avatar(raw, username, size='normal') {
-  const a=safeAvatar(raw);
-  const el=document.createElement('span');
-  const displaySize=['big','tiny','preview'].includes(size)?size:'';
-  el.className='f1-avatar'+(displaySize?' '+displaySize:'')+(a.kind==='racer'?' racer':'');
+  const avatar = safeAvatar(raw);
+  const el = document.createElement('span');
+  const suffix = ['big','tiny','preview'].includes(size) ? ' '+size : '';
+  el.className = 'f1-avatar'+suffix;
+  el.style.backgroundColor = avatar.color;
   el.setAttribute('role','img');
   el.setAttribute('aria-label',`Avatars: ${String(username||'Spēlētājs')}`);
-  if(a.kind==='racer') {
-    el.innerHTML=renderRacerSvg(a);
+  if (avatar.kind === 'image') {
+    const image = document.createElement('img');
+    image.alt = '';
+    image.src = avatar.image;
+    el.appendChild(image);
   } else {
-    el.style.backgroundColor=a.color;
-    if(a.kind==='image') {
-      const img=document.createElement('img');
-      img.alt=''; img.src=a.image;
-      el.appendChild(img);
-    } else if(a.kind==='emoji') {
-      el.textContent=a.emoji;
-    } else {
-      el.textContent=(String(username||'?').trim()[0]||'?').toLocaleUpperCase('lv');
-    }
+    const initial = [...String(username||'?').trim()][0] || '?';
+    el.textContent = initial.toLocaleUpperCase('lv');
   }
   return el;
 }
 function renderPlayerAvatar() {
-  const root=document.getElementById('playerAvatarPreview');
+  const root = document.getElementById('playerAvatarPreview');
   root.replaceChildren();
-  if(currentPlayerProfile) root.appendChild(createF1Avatar(currentPlayerProfile.avatar,currentPlayerProfile.username,'big'));
+  if (currentPlayerProfile) {
+    root.appendChild(createF1Avatar(currentPlayerProfile.avatar,currentPlayerProfile.username,'big'));
+  }
 }
 function renderDraftAvatar() {
-  const root=document.getElementById('avatarDraftPreview');
-  root.replaceChildren(createF1Avatar(avatarDraft,currentPlayerProfile?.username||'?','preview'));
-  const kind=avatarDraft.kind==='racer'?'racer':
-    (avatarDraft.kind==='image'||avatarDraft.kind==='imagePending')?'image':'emoji';
-  document.querySelectorAll('[data-avatar-kind]').forEach(btn=>
-    btn.setAttribute('aria-pressed',String(btn.dataset.avatarKind===kind)));
-  document.getElementById('avatarRacerControls').hidden=kind!=='racer';
-  document.getElementById('avatarSymbolControls').hidden=kind!=='emoji';
-  document.getElementById('avatarImageControls').hidden=kind!=='image';
-  if(kind==='racer') {
-    for(const input of document.querySelectorAll('[data-avatar-setting]')) {
-      const key=input.dataset.avatarSetting;
-      if(input.value!==avatarDraft[key]) input.value=avatarDraft[key];
-    }
-  }
-  document.getElementById('avatarColor').value=avatarDraft.color||F1_AVATAR_COLOR;
-  document.querySelectorAll('.avatar-option').forEach(btn=>
-    btn.setAttribute('aria-pressed',String(avatarDraft.kind==='emoji' && btn.dataset.emoji===avatarDraft.emoji)));
+  const root = document.getElementById('avatarDraftPreview');
+  root.replaceChildren(createF1Avatar(
+    avatarDraft,currentPlayerProfile?.username||'?', 'preview'));
+  document.getElementById('avatarInitialControls').hidden = avatarEditorMode !== 'initials';
+  document.getElementById('avatarImageControls').hidden = avatarEditorMode !== 'image';
+  document.getElementById('avatarChooseInitial').setAttribute('aria-pressed',String(avatarEditorMode==='initials'));
+  document.getElementById('avatarChoosePhoto').setAttribute('aria-pressed',String(avatarEditorMode==='image'));
+  document.getElementById('avatarColor').value = avatarDraft.color || F1_AVATAR_COLOR;
 }
-function chooseAvatarKind(kind) {
-  if(avatarDraft.kind==='racer') racerDraftMemory=safeAvatar(avatarDraft);
-  if(kind==='racer') avatarDraft=safeAvatar(racerDraftMemory);
-  else if(kind==='image') {
-    if(avatarDraft.kind!=='image') avatarDraft={kind:'imagePending',color:F1_AVATAR_COLOR};
-  } else if(kind==='emoji') {
-    if(avatarDraft.kind!=='emoji') avatarDraft={kind:'emoji',color:F1_AVATAR_COLOR,emoji:F1_EMOJIS[0]};
+function setAvatarMode(mode) {
+  avatarEditorMode = mode;
+  if (mode === 'initials') {
+    avatarDraft = {kind:'initials',color:avatarDraft.color||F1_AVATAR_COLOR};
+  } else if (avatarDraft.kind !== 'image') {
+    // Foto izvēlē nav veca attēla: iniciālis paliek redzams līdz izvēlēts fails.
+    avatarDraft = {kind:'initials',color:avatarDraft.color||F1_AVATAR_COLOR};
   }
-  document.getElementById('avatarEditMsg').textContent='';
+  document.getElementById('avatarEditMsg').textContent = '';
   renderDraftAvatar();
 }
-for(const btn of document.querySelectorAll('[data-avatar-kind]')) {
-  btn.addEventListener('click',()=>chooseAvatarKind(btn.dataset.avatarKind));
-}
-for(const input of document.querySelectorAll('[data-avatar-setting]')) {
-  const handle=()=>{
-    if(avatarDraft.kind!=='racer') return;
-    const field=input.dataset.avatarSetting;
-    const next=safeAvatar({...avatarDraft,[field]:input.value});
-    avatarDraft=next;
-    racerDraftMemory={...next};
-    renderDraftAvatar();
-  };
-  input.addEventListener(input.tagName==='INPUT'?'input':'change',handle);
-}
-const avatarPicker=document.getElementById('avatarEmojiChoices');
-F1_EMOJIS.forEach(emoji=>{
-  const btn=document.createElement('button');
-  btn.type='button';btn.className='avatar-option';btn.dataset.emoji=emoji;
-  btn.setAttribute('aria-label','Izvēlēties '+emoji);
-  btn.textContent=emoji;
-  btn.addEventListener('click',()=>{
-    avatarDraft={kind:'emoji',color:avatarDraft.color||F1_AVATAR_COLOR,emoji};
-    renderDraftAvatar();
-  });
-  avatarPicker.appendChild(btn);
-});
+document.getElementById('avatarChooseInitial').addEventListener('click',()=>setAvatarMode('initials'));
+document.getElementById('avatarChoosePhoto').addEventListener('click',()=>setAvatarMode('image'));
 document.getElementById('editAvatarBtn').addEventListener('click',()=>{
-  if(!currentPlayerProfile)return;
-  const editor=document.getElementById('avatarEditor');
-  editor.hidden=!editor.hidden;
-  if(!editor.hidden){
-    avatarDraft=safeAvatar(currentPlayerProfile.avatar);
-    racerDraftMemory=avatarDraft.kind==='racer'?{...avatarDraft}:{...DEFAULT_RACER_AVATAR};
-    document.getElementById('avatarPhotoFile').value='';
-    document.getElementById('avatarEditMsg').textContent='';
+  if (!currentPlayerProfile) return;
+  const editor = document.getElementById('avatarEditor');
+  editor.hidden = !editor.hidden;
+  if (!editor.hidden) {
+    avatarDraft = safeAvatar(currentPlayerProfile.avatar);
+    avatarEditorMode = avatarDraft.kind==='image'?'image':'initials';
+    document.getElementById('avatarPhotoFile').value = '';
+    document.getElementById('avatarEditMsg').textContent = '';
     renderDraftAvatar();
     editor.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
 });
 document.getElementById('cancelAvatarBtn').addEventListener('click',()=>{
-  document.getElementById('avatarEditor').hidden=true;
-  document.getElementById('avatarPhotoFile').value='';
-});
-document.getElementById('resetAvatarBtn').addEventListener('click',()=>{
-  avatarDraft={...DEFAULT_RACER_AVATAR};
-  racerDraftMemory={...avatarDraft};
-  document.getElementById('avatarPhotoFile').value='';
-  document.getElementById('avatarEditMsg').textContent='';
-  renderDraftAvatar();
+  document.getElementById('avatarEditor').hidden = true;
+  document.getElementById('avatarPhotoFile').value = '';
 });
 document.getElementById('avatarColor').addEventListener('input',event=>{
-  if(avatarDraft.kind==='racer')return;
-  avatarDraft.color=event.target.value;
+  avatarDraft={kind:'initials',color:event.target.value};
   renderDraftAvatar();
 });
-// Esošā 160x160 bilde tiek saspiesta un saglabāta JSONB kā agrāk.
+// Samazina JPG uz 160x160 pikseļiem un saglabā JSONB, bez Storage bucketa.
 function shrinkAvatarImage(file) {
   return new Promise((resolve,reject)=>{
     const url=URL.createObjectURL(file);
     const image=new Image();
     image.onload=()=>{
-      try{
+      try {
         const canvas=document.createElement('canvas');
         canvas.width=160;canvas.height=160;
         const ctx=canvas.getContext('2d');
-        if(!ctx)throw new Error('Pārlūks nevar apstrādāt attēlu.');
+        if (!ctx) throw new Error('Pārlūks nevar apstrādāt attēlu.');
         const side=Math.min(image.naturalWidth,image.naturalHeight);
         ctx.drawImage(image,(image.naturalWidth-side)/2,(image.naturalHeight-side)/2,side,side,0,0,160,160);
         const result=canvas.toDataURL('image/jpeg',.78);
-        if(result.length>45000)throw new Error('Attēls pārāk liels pēc samazināšanas.');
+        if (result.length>45000) throw new Error('Attēls ir pārāk liels pēc samazināšanas.');
         resolve(result);
-      }catch(e){reject(e);}finally{URL.revokeObjectURL(url);}
+      } catch(error) { reject(error); }
+      finally { URL.revokeObjectURL(url); }
     };
     image.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Nevar atvērt attēlu.'));};
     image.src=url;
   });
 }
 document.getElementById('avatarPhotoFile').addEventListener('change',async event=>{
-  const file=event.target.files?.[0];if(!file)return;
+  const file=event.target.files?.[0];
+  if(!file) return;
   const msg=document.getElementById('avatarEditMsg');
-  if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>3*1024*1024){
+  if (!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>3*1024*1024) {
     msg.textContent='Izvēlies JPG, PNG vai WebP attēlu līdz 3 MB.';
     event.target.value='';return;
   }
   avatarUploadBusy=true;
   document.getElementById('saveAvatarBtn').disabled=true;
-  msg.textContent='Apstrādāju attēlu...';
-  try{
+  msg.textContent='Apstrādāju attēlu…';
+  try {
     const image=await shrinkAvatarImage(file);
-    avatarDraft={kind:'image',color:F1_AVATAR_COLOR,image};
+    avatarDraft={kind:'image',color:avatarDraft.color||F1_AVATAR_COLOR,image};
+    avatarEditorMode='image';
     renderDraftAvatar();
-    msg.textContent='Attēls sagatavots. Nospied „Saglabāt avataru”.';
-  }catch(error){msg.textContent='Attēla kļūda: '+error.message;}
-  finally{
-    avatarUploadBusy=false;
-    document.getElementById('saveAvatarBtn').disabled=false;
-  }
+    msg.textContent='Foto sagatavots. Nospied „Saglabāt attēlu”.';
+  } catch(error) { msg.textContent='Attēla kļūda: '+error.message; }
+  finally { avatarUploadBusy=false;document.getElementById('saveAvatarBtn').disabled=false; }
 });
 document.getElementById('saveAvatarBtn').addEventListener('click',async()=>{
-  if(!currentPlayer||!currentPlayerProfile||avatarUploadBusy)return;
+  if (!currentPlayer||!currentPlayerProfile||avatarUploadBusy) return;
   const button=document.getElementById('saveAvatarBtn');
   const msg=document.getElementById('avatarEditMsg');
-  if(avatarDraft.kind==='imagePending') {
-    msg.textContent='Vispirms izvēlies attēla failu.';
+  if (avatarEditorMode==='image' && avatarDraft.kind!=='image') {
+    msg.textContent='Vispirms izvēlies foto vai pārslēdzies uz burtu ar fonu.';
     return;
   }
   const avatar=safeAvatar(avatarDraft);
   const userId=currentPlayer.id;
   button.disabled=true;
-  msg.textContent='Saglabāju avataru...';
-  try{
+  msg.textContent='Saglabāju profila attēlu…';
+  try {
     const {data,error}=await supabaseClient.from('f1_profiles')
       .update({avatar}).eq('id',userId).select('avatar').single();
-    if(error)throw error;
+    if(error) throw error;
     if(!currentPlayer||currentPlayer.id!==userId||!currentPlayerProfile)return;
     currentPlayerProfile.avatar=data.avatar;
     renderPlayerAvatar();
     document.getElementById('avatarEditor').hidden=true;
     msg.textContent='';
-    if(document.getElementById('tab-leaderboard').classList.contains('active'))await renderLeaderboard();
-    if(selectedRaceRound){
+    if (document.getElementById('tab-leaderboard').classList.contains('active')) await renderLeaderboard();
+    if (selectedRaceRound) {
       const finished=await getJSON('result:'+selectedRaceRound);
-      if(finished)await renderPlayerPredictionStrip(selectedRaceRound,finished);
+      if (finished) await renderPlayerPredictionStrip(selectedRaceRound,finished);
     }
-  }catch(error){msg.textContent='Avatara saglabāšanas kļūda: '+error.message;}
-  finally{button.disabled=false;}
+  } catch(error) { msg.textContent='Neizdevās saglabāt profila attēlu: '+error.message; }
+  finally {button.disabled=false;}
 });
 
+/* ---------------- KOPĒJIE PUNKTI PROFILA LABAJĀ PUSĒ ---------------- */
+async function renderProfileScores() {
+  const root = document.getElementById('profileScoreList');
+  const request = ++profileScoreRequest;
+  const profile = currentPlayerProfile;
+  const userId = currentPlayer?.id;
+  root.replaceChildren();
+  if (!profile || !userId) return;
+  const loading = document.createElement('div');
+  loading.className = 'profile-score-status';
+  loading.textContent = 'Ielādē tavus punktus…';
+  root.appendChild(loading);
+  try {
+    // Precīza atslēgu atlase: tikai paša lietotāja 24 sezonas posmi.
+    // Tiek izmantoti tie paši score:<round>:<username> ieraksti, kurus izmanto Kopvērtējums.
+    const normalizedName = String(profile.username).trim().toLowerCase();
+    const scoreKeys = CALENDAR.map(r => `score:${r.round}:${normalizedName}`);
+    const { data, error } = await supabaseClient
+      .from('f1_storage').select('key, value').in('key', scoreKeys);
+    if (error) throw error;
+    if (request !== profileScoreRequest || currentPlayer?.id !== userId) return;
+    let total = 0;
+    let rounds = 0;
+    for (const row of data || []) {
+      const score = row.value;
+      if (!score || String(score.name || '').trim().toLowerCase() !== normalizedName) continue;
+      const points = Number(score.total);
+      if (!Number.isFinite(points)) continue;
+      total += points;
+      rounds++;
+    }
+    root.replaceChildren();
+    const amount = document.createElement('div');
+    amount.className = 'profile-score-total';
+    amount.textContent = new Intl.NumberFormat('lv-LV').format(total);
+    const unit = document.createElement('span');
+    unit.className = 'profile-score-unit';
+    unit.textContent = 'punkti';
+    amount.appendChild(unit);
+    const sub = document.createElement('div');
+    sub.className = 'profile-score-rounds';
+    sub.textContent = `${rounds} novērtēti posmi`;
+    root.append(amount, sub);
+  } catch (error) {
+    if (request !== profileScoreRequest || currentPlayer?.id !== userId) return;
+    root.replaceChildren();
+    const msg = document.createElement('div');
+    msg.className = 'profile-score-status';
+    msg.textContent = 'Neizdevās ielādēt tavus punktus: ' + error.message;
+    root.appendChild(msg);
+    console.error('Personīgo punktu ielādes kļūda:', error);
+  }
+}
 
 async function updatePlayerAuthUI(user) {
   const nonce = ++authRenderNonce;
@@ -1624,6 +1349,7 @@ async function updatePlayerAuthUI(user) {
 
   currentPlayer = user || null;
   currentPlayerProfile = null;
+  ++profileScoreRequest;
   protectedContent.hidden = true;
   loginCard.hidden = !!user;
   profileCard.hidden = !user;
@@ -1672,6 +1398,7 @@ async function updatePlayerAuthUI(user) {
 
   currentPlayerProfile = profile;
   renderPlayerAvatar();
+  void renderProfileScores();
   displayName.textContent = profile.username;
   nameInput.value = profile.username; // tikai saderībai ar veco UI
   protectedContent.hidden = false;
@@ -1974,6 +1701,7 @@ document.querySelectorAll('nav button').forEach(btn=>{
     btn.classList.add('active');
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
     if(btn.dataset.tab==='results') renderResultsTab();
+    if(btn.dataset.tab==='predict' && currentPlayerProfile) void renderProfileScores();
     if (btn.dataset.tab === 'leaderboard') {
   renderLeaderboard();
   renderScoreChart();
@@ -2240,7 +1968,9 @@ async function renderPlayerPredictionStrip(round, result) {
     btn.dataset.player = prediction.name.toLowerCase();
     btn.appendChild(createF1Avatar(prediction.avatar, prediction.name, 'tiny'));
     const nameLabel = document.createElement('span');
+    nameLabel.className = 'player-chip-name';
     nameLabel.textContent = prediction.name;
+    btn.title = prediction.name;
     btn.appendChild(nameLabel);
     btn.addEventListener('click', () => showPlayer(prediction));
     strip.appendChild(btn);
@@ -2533,6 +2263,20 @@ async function renderResultsTab(){
   }
 
 
+  // Ielādē profilus tikai vienu reizi visam rezultātu pārskatam.
+  // Fotogrāfiju izmanto tieši no f1_profiles.avatar, tāpat kā Kopvērtējumā.
+  const { data: avatarProfiles, error: avatarProfilesError } = await supabaseClient
+    .from('f1_profiles')
+    .select('username, avatar');
+  if (avatarProfilesError) console.warn('Rezultātu avataru ielāde:', avatarProfilesError);
+  const avatarByName = new Map((avatarProfiles || [])
+    .filter(p => typeof p.username === 'string')
+    .map(p => [p.username.trim().toLowerCase(), p.avatar]));
+  // Pieejamais ielogotā profila avatars kalpo kā rezerves variants.
+  if (currentPlayerProfile) {
+    avatarByName.set(currentPlayerProfile.username.trim().toLowerCase(), currentPlayerProfile.avatar);
+  }
+  const bestPredictionNames = [];
   let html = '';
 
 
@@ -2625,6 +2369,8 @@ async function renderResultsTab(){
     }
 
 
+    if (top) bestPredictionNames.push(top.name);
+
     html += `
       <div class="card">
 
@@ -2681,18 +2427,11 @@ async function renderResultsTab(){
         ${
           top
             ? `
-              <p
-                class="lede"
-                style="margin-top:6px;margin-bottom:0;"
-              >
-                Posma rezultatīvākā prognoze:
-
-                <b style="color:var(--text);">
-                  ${escapeHTML(top.name)}
-                </b>
-
-                — ${top.total} pts
-              </p>
+              <div class="result-best-prediction">
+                <span class="result-best-label">Posma rezultatīvākā prognoze</span>
+                <span class="result-best-player"><span class="result-best-avatar-slot"></span><span>${escapeHTML(top.name)}</span></span>
+                <span class="result-best-points">${Number(top.total) || 0} punkti</span>
+              </div>
             `
             : ''
         }
@@ -2703,6 +2442,14 @@ async function renderResultsTab(){
 
 
   list.innerHTML = html;
+
+  // SVG/teksta ievietošana nav nepieciešama — izmantojam esošo foto/iniciāļa komponenti.
+  // Avataru pievienojam ar DOM, nevis ievietojam no datubāzes nolasītu HTML virkni.
+  list.querySelectorAll('.result-best-avatar-slot').forEach((slot, i) => {
+    const name = bestPredictionNames[i];
+    const avatar = avatarByName.get(String(name).trim().toLowerCase()) || {};
+    slot.appendChild(createF1Avatar(avatar, name, 'tiny'));
+  });
 }
 /* ---------------- leaderboard ---------------- */
 async function renderLeaderboard(){
@@ -2738,6 +2485,7 @@ async function renderLeaderboard(){
       createF1Avatar(avatarByName.get(sorted[i].name.trim().toLowerCase()), sorted[i].name, 'tiny')
     );
   });
+  if (currentPlayerProfile) void renderProfileScores();
 }
 /* ---------------- Kopvērtējuma līkņu grafiks ---------------- */
 
@@ -2991,42 +2739,81 @@ document.getElementById('adminUnlockBtn').addEventListener('click', async () => 
 async function populateManagePlayerSelect() {
   const sel = document.getElementById('managePlayerSelect');
   const { data, error } = await supabaseClient
-    .from('f1_profiles').select('id, username').order('username');
+    .from('f1_profiles').select('id, username').neq('id', F1_ADMIN_UID).order('username');
+  sel.replaceChildren();
   if (error) {
-    sel.innerHTML = '<option value="">Neizdevās ielādēt spēlētājus</option>';
+    sel.appendChild(new Option('Neizdevās ielādēt spēlētājus', ''));
     console.error('Spēlētāju saraksts:', error);
     return;
   }
-  sel.innerHTML = (data || []).length
-    ? data.map(p => `<option value="${p.id}">${escapeHTML(p.username)}</option>`).join('')
-    : '<option value="">Vēl nav spēlētāju</option>';
+  const players = data || [];
+  if (!players.length) {
+    sel.appendChild(new Option('Nav neviena dzēšama spēlētāja', ''));
+    return;
+  }
+  for (const p of players) sel.appendChild(new Option(p.username, p.id));
 }
 
 document.getElementById('deletePlayerBtn').addEventListener('click', async () => {
   const msg = document.getElementById('managePlayerMsg');
+  const button = document.getElementById('deletePlayerBtn');
+  const setStatus = (type, message) => {
+    msg.className = message ? `msg ${type}` : '';
+    msg.textContent = message;
+  };
+  setStatus('', '');
   if (!adminUnlocked) {
-    msg.textContent = 'Nepieciešama administratora ielogošanās.';
+    setStatus('err', 'Nepieciešama administratora ielogošanās.');
     return;
   }
   const userId = document.getElementById('managePlayerSelect').value;
-  if (!userId) return;
-  const { data: profile, error } = await supabaseClient
-    .from('f1_profiles').select('username').eq('id', userId).maybeSingle();
-  if (error || !profile) { msg.textContent = 'Profils nav atrasts.'; return; }
-  const name = profile.username;
-  if (!confirm(`Dzēst visas ${name} prognozes un rezultātu punktus? Šo nevar atsaukt.`)) return;
-  const deletion = await supabaseClient
-    .from('f1_predictions').delete().eq('user_id', userId);
-  if (deletion.error) {
-    msg.textContent = 'Neizdevās dzēst prognozes: ' + deletion.error.message;
+  if (!userId || userId === F1_ADMIN_UID) return;
+  const { data: currentAuth, error: authError } = await supabaseClient.auth.getUser();
+  if (authError || currentAuth?.user?.id !== F1_ADMIN_UID) {
+    setStatus('err', 'Sesija nav administratora konts. Ielogojies Admin sadaļā vēlreiz.');
     return;
   }
-  const lower = name.toLowerCase();
-  const scoreKeys = (await listKeys('score:')).filter(k => k.endsWith(':' + lower));
-  const legacyKeys = (await listKeys('prediction:')).filter(k => k.endsWith(':' + lower));
-  for (const key of [...scoreKeys, ...legacyKeys]) await deleteKey(key);
-  msg.textContent = `${name}: dzēstas prognozes un kopvērtējuma punkti. Auth profils paliek aktīvs.`;
-  await renderLeaderboard();
+  const { data: profile, error: profileError } = await supabaseClient
+    .from('f1_profiles').select('username').eq('id', userId).maybeSingle();
+  if (profileError || !profile) {
+    setStatus('err', 'Spēlētāja profils nav atrasts.');
+    return;
+  }
+  const name = profile.username;
+  const entered = prompt(
+    `NEATGRIEZENISKA DZĒŠANA!\n\n` +
+    `Tiks dzēsts ${name} Auth konts, profils, avatars, prognozes un visi punkti.\n` +
+    `Lai apstiprinātu, precīzi ieraksti spēlētāja vārdu: ${name}`
+  );
+  if (entered !== name) {
+    if (entered !== null) setStatus('info', 'Dzēšana atcelta: spēlētāja vārds nesakrita.');
+    return;
+  }
+  button.disabled = true;
+  setStatus('info', `Notiek ${name} konta un datu dzēšana…`);
+  try {
+    // Viena datubāzes transakcija ar servera puses admin UID pārbaudi.
+    // Nekad neizmanto service_role atslēgu pārlūka JavaScript kodā.
+    const { data, error } = await supabaseClient.rpc('f1_admin_delete_player', {
+      p_player_id: userId
+    });
+    if (error) throw error;
+    if (!data?.success) throw new Error('Serveris neapstiprināja konta dzēšanu.');
+    setStatus('ok', `${name}: pilnībā dzēsts Auth konts, profils, prognozes un punkti.`);
+    await populateManagePlayerSelect();
+    await Promise.all([renderLeaderboard(), renderScoreChart()]);
+    if (currentPlayerProfile) void renderProfileScores();
+    if (selectedRaceRound) {
+      const finished = await getJSON('result:' + selectedRaceRound);
+      if (finished) await renderPlayerPredictionStrip(selectedRaceRound, finished);
+    }
+  } catch (error) {
+    console.error('Pilnīgas konta dzēšanas kļūda:', error);
+    setStatus('err', 'Dzēšana neizdevās: ' + error.message +
+      ' Pārbaudi, vai Supabase SQL Editor izpildīts SQL 4.');
+  } finally {
+    button.disabled = false;
+  }
 });
 
 async function renderAdminRaceStrip(){
